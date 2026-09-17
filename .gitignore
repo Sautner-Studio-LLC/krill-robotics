@@ -25,3 +25,29 @@ replay_pid*
 
 # Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
 .kotlin/
+# --- krill-robotics ---
+# Script output. Contains host names and probe dumps; disposable.
+logs/
+
+# Gradle / Kotlin build output
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Generated CAD artifacts -- regenerate from the parametric sources, never commit.
+# STEP and STL are large, binary-ish, and derived.
+out/
+*.stl
+*.STL
+*.step
+*.STEP
+*.3mf
+*.f3d
+*.f3z
+
+# Renders and photos live off-repo; GitHub rejects >100 MB and they are not source.
+*.mp4
+*.MOV
+
+# macOS
+.DS_Store

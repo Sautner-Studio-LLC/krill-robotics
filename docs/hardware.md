@@ -1,0 +1,213 @@
+# Hexbot — hardware and design rules
+
+The machine as actually built, and the handful of rules that constrain everything else.
+Numbers marked **estimate** are awaiting measurement; the discipline is that every
+dimension lives in exactly one place in code and declares its provenance.
+
+## Layout
+
+Radial — six legs at 60°, **no front and no back**. The consequences of that choice show
+up everywhere: rotation in place is a single joint per leg, there is no turning circle,
+and "which way is forward" is a software decision rather than a mechanical one.
+
+## Per leg: 4 DOF, 24 servos total
+
+| # | joint | axis | carries gravity torque | servo class |
+|---|---|---|---|---|
+| 1 | coxa yaw | **vertical** | no | 80 kg·cm |
+| 2 | hip lift | horizontal | yes | 80 kg·cm |
+| 3 | knee | horizontal, ∥ to 2 | yes | 45 kg·cm |
+| 4 | ankle | horizontal, ∥ to 2 and 3 | yes | 45 kg·cm |
+
+Joints 2–4 are three **coplanar pitch joints** in one vertical plane, and joint 1 rotates
+that plane about the vertical. So the leg is a **3-link planar chain with one redundant
+DOF**, not the 2-link law-of-cosines problem a 3-DOF hexapod leg gives you.
+
+> **The coxa's vertical axis carries no gravity torque but is not over-specced.** The
+> moment of a vertical force about a vertical axis is identically zero, so it holds
+> nothing up — but it carries the *entire* horizontal reaction: all propulsion, all
+> turning, and every side load. It is the joint that resists the robot being shoved.
+
+### Link lengths
+
+| | value | status |
+|---|---|---|
+| hip circle radius | 85–95 mm | design target |
+| hip lift axis → knee | ~60 mm | **estimate — highest-leverage unknown** |
+| knee → ankle | **350 mm** | measured |
+| ankle → foot contact | ~80 mm | **estimate** |
+| total mass | ~7 kg | **estimate** |
+
+Mass bottom-up: 24 servos are 6 × (2 × 0.17 + 2 × 0.07) = **2.88 kg of servos alone**,
+plus roughly 1.9 kg of printed leg structure and 1.5–2.5 kg of chassis, pack and
+electronics. Mass is the most leveraged unmeasured quantity in the machine — every
+workspace limit scales as 1/M.
+
+## Why the fourth joint exists
+
+Not for torque. **For reach range.** Because the femur is much shorter than the tibia,
+the leg behaves almost like a fixed-length strut on a ball joint, and the reachable shell
+is thin:
+
+| | hip→contact shell | body-height travel at 100 mm stance offset |
+|---|---|---|
+| 3 DOF (no ankle) | [290, 410] mm — 120 mm deep | 125 mm |
+| 4 DOF (ankle) | [210, 490] mm — **280 mm deep** | **295 mm** |
+
+A US residential stair riser is 178 mm. **A 3-DOF version of this robot physically cannot
+lift its body one riser.** The ankle is a 2.33× multiplier on the leg's entire reach
+range, and that is its justification.
+
+## The torque model
+
+```
+tau_joint = F * (horizontal distance from that joint's axis to the CONTACT POINT) * SF
+F         = M * g * loadShareWorstCase
+```
+
+**The structural result:** for a vertical load, `tau_hip = F · u_c`, where `u_c` is the
+horizontal offset from the hip-lift axis to the contact point. It contains **no joint
+angle at all** — sweeping the leg's redundant DOF at a fixed foot target leaves hip torque
+invariant to the last digit. So the redundancy cannot reduce hip torque; it only trades
+between knee and ankle. That splits the guard into two separate mechanisms: a **hard
+workspace limit** on contact placement, and **posture optimisation** inside it.
+
+A useful closed form falls out for the ankle: `tau_ankle = F · L4 · cos φ`, where φ is the
+absolute angle of the foot segment. It is **maximal at flat-foot** and zero at φ = ±90°.
+
+> ⚠ **Keep ankle→foot short.** Because ankle torque peaks in the flat-footed pose — the
+> one you want for traction — a long foot segment makes flat-footed standing torque-
+> infeasible and forces a toe-down or heel-down attitude instead. Under about 100 mm.
+
+### Two parameters, not one
+
+`loadShareWorstCase` (physics) and `safetyFactor` (design margin) must be separate.
+Tripod load does not split evenly by `1/n`; it splits by where the centre of mass falls
+in the support triangle, reaching 1.0 at a vertex. Folding that uncertainty into the
+safety factor means a nominal 2× margin is really about 1.33×, and you cannot see which
+one you are spending.
+
+### Derate against measured pack voltage
+
+Servo torque falls with pack voltage, so a fixed ceiling is wrong in both directions at
+once — it wastes an 80 kg·cm joint's capability while being optimistic about a 45 kg·cm
+joint near cutoff. Derate the published curve and evaluate it at the actual voltage. On a
+light pack the voltage sags visibly across one mission, so this is doing real work from
+the first walk, not just near cutoff.
+
+### The term that is easy to omit
+
+`tau_hip = c_u · R_w − c_w · R_u`, and `c_w` is negative (the contact is below the hip).
+**Body height is a full moment arm on every horizontal force.** At a 341 mm body height a
+mere 10 N of drive or side load contributes 3.41 N·m at the hip — larger than the entire
+vertical-load budget. And it is *worse* in the tall tucked stance that a vertical-only
+analysis recommends. **The guard must take a force vector, never a scalar.**
+
+### The leg's own mass is not negligible
+
+Roughly 0.46 kg sits outboard of each hip-lift axis. That is ~12 % of the hip budget in a
+tucked stance and **~27 % for a leg extended in swing**. The 27 % decides it: a swing leg
+carries no external load, so a model without self-mass computes exactly zero for the
+swing-phase check and the check is vacuous.
+
+## Contact modes
+
+The leg can present different links to the ground, and the modes differ in **constraint
+arity**, not merely in contact offset — so each needs its own solve rather than sharing
+one with an offset parameter.
+
+| mode | contact | position constraints | free DOF |
+|---|---|---|---|
+| `PLANTIGRADE` | foot sole or toe | 3 (point) | 1 → the foot attitude φ |
+| `ANKLE_PLANT` | distal tibia | 3 (point) | 0 — exactly determined |
+| `KNEE_PLANT` | knee pad | 3 (point) | 0, and only a femur's worth of reach |
+| `SHIN_BRACE` | tibia *surface* | 2 point + 1 orientation | 0, and the stance offset becomes an **output** |
+
+`SHIN_BRACE` is the one that breaks a naive abstraction: with a line contact you cannot
+command a contact point at all, only a posture. Toe contact is **not** a mode — it is a
+different named point on the same foot link, so model contact features (a point plus a
+normal, fixed in a link frame) and digitigrade falls out for free.
+
+`ANKLE_PLANT` earns its place three ways: the foot and ankle servo retract *above* the
+contact and are protected on rubble, `tau_ankle` becomes structurally zero so that servo
+can be de-energised, and it is the degraded mode if an ankle servo fails — the leg still
+walks.
+
+### Knee contact is the high-load mode
+
+Not because folding shortens a lever — hip torque is mode-independent at a given stance
+offset. It is because **only the tibia is long enough to place a contact point directly
+beneath the hip axis at low body height**, and that pose is a vertical compression strut:
+
+| femur angle | body height | contact offset | hip torque |
+|---|---|---|---|
+| **−90°** | **60 mm** | **0 mm** | **0.000 N·m** |
+| −70° | 56 mm | 20.5 mm | 0.704 N·m |
+| −60° | 52 mm | 30.0 mm | 1.030 N·m |
+
+Plantigrade can reach zero offset too, but only at ~350 mm body height, where the support
+polygon is small relative to the centre-of-mass height. With the unloaded tibiae splayed
+outward as outriggers, knee contact reaches a **78.9° tipping angle** against 16.4° for a
+plantigrade tripod at the same span.
+
+## ⚠ Rule: the robot never stands still
+
+**Whenever it stops, it drops onto its belly and the servos go cold.** There is no
+standing-hold state at all, and this is the most load-bearing rule in the project:
+
+- The **static holding-torque case is not the design case.** The binding cases are dynamic
+  load transfer and body lift.
+- **Thermal steady state is never reached**, so 24 large servos never cook holding a pose.
+  A duty-cycle model should accumulate over *motion*, not over holding.
+- **A belly-down pose that is stable with torque off is the central invariant of the
+  machine** — it is simultaneously the rest state, the charge state and the failure state.
+  If that pose needs power to hold, everything downstream of it fails.
+
+### Two stops, and conflating them is the bug
+
+| | belly drop | emergency torque off |
+|---|---|---|
+| what | commanded, sequenced lower onto the chassis, *then* cut torque | cut all outputs immediately |
+| driven by | the motion tier, on any ordinary stop | the reflex tier, in hardware |
+| result | controlled, repeatable, charge-ready | **the robot falls from wherever it was** |
+
+The normal stop is a **motion**, not a freeze. A corollary worth stating: because the
+reflex cut drops the body from whatever height it was carrying, **keeping default walking
+height low is a safety property**, not a style choice.
+
+## Mission profile
+
+Short bursty missions of 10–20 minutes, then return to a charge plate and rest belly-down
+with servos cold. Multiple plates rather than one home base, so "return to dock" means
+**the nearest** plate — dock poses are a *set*, the charge reserve takes the minimum
+distance, and alignment must be repeatable across plates rather than tuned to one.
+
+This profile is why cooling is undemanding: a 20-minute duty cycle followed by a charge
+break never reaches thermal steady state. It also sizes the pack — a 20-minute burst is on
+the order of 25–37 Wh, so a pack sized for hour-long missions is dead weight, and weight
+is the most leveraged number in the torque budget.
+
+## Three actuation constraints
+
+1. **24 joints, so two PCA9685 boards** at 0x40 and 0x41 (bridge A0 on the second) for 32
+   channels. See [pi-bringup.md](pi-bringup.md) for identifying them on the bus.
+2. **Run the PWM frame at 200 Hz rather than 50 Hz if the servos tolerate it.** The
+   PCA9685's 12 bits divide the *period*, so 200 Hz gives a 1.24 µs LSB instead of
+   4.88 µs — for a 270° servo over 500–2500 µs that is 0.167 °/LSB instead of 0.66, a 4×
+   resolution improvement. **Verify on one servo first**: a digital servo updated four
+   times as often draws more current and runs hotter.
+3. **Phase-stagger the channel ON counts.** With every channel starting its pulse on the
+   same edge, the pack sees a simultaneous current surge 16× per period. Stagger them
+   across the period instead. ⚠ A PCA9685 brown-out reset is **silent** — `MODE1` returns
+   to 0x11 with `SLEEP=1`, every output stops, nothing is reported, and the robot simply
+   goes limp. Poll `MODE1` and treat `SLEEP=1` as a fault.
+
+> ⚠ **`OE` on the PCA9685 is an active-LOW output *enable*.** `OE` low means outputs are
+> driven; `OE` high means they fall back to the `MODE2.OUTNE` state. **The fault action is
+> therefore `OE` HIGH.** Getting this backwards arms the outputs in exactly the case the
+> fail-safe exists for. Set `OUTNE = 00` so the disabled state drives the outputs low —
+> high-impedance lets a long servo lead float and pick up noise a servo may read as a pulse.
+>
+> And check which way `OE` idles with the microcontroller disconnected. If it idles low,
+> a dead controller leaves every servo armed, and the fix is a pull-up so the default is
+> disarmed and the controller must actively pull low to arm.
