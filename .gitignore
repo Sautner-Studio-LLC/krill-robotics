@@ -34,16 +34,17 @@ logs/
 build/
 !gradle/wrapper/gradle-wrapper.jar
 
-# Generated CAD artifacts -- regenerate from the parametric sources, never commit.
-# STEP and STL are large, binary-ish, and derived.
-out/
-*.stl
-*.STL
-*.step
-*.STEP
+# CAD. The models are built BY HAND in Fusion 360; there is no generated geometry
+# in this project, so STEP and STL are DELIVERABLES and are tracked (via LFS --
+# see .gitattributes), not build output.
+#
+# What stays out:
+#   vendor/  third-party reference bodies (servo solids etc). Used as visual aids,
+#            NOT ours to redistribute. Credited and linked in cad/README.md instead.
+#   wip/     work-in-progress exports being iterated on; promote to export/ when real.
+cad/vendor/
+cad/wip/
 *.3mf
-*.f3d
-*.f3z
 
 # Renders and photos live off-repo; GitHub rejects >100 MB and they are not source.
 *.mp4
