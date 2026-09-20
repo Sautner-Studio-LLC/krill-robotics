@@ -187,6 +187,35 @@ break never reaches thermal steady state. It also sizes the pack — a 20-minute
 the order of 25–37 Wh, so a pack sized for hour-long missions is dead weight, and weight
 is the most leveraged number in the torque budget.
 
+## Servo channel map
+
+Fixed convention, the same for all six legs — **leg *N* occupies channels `4N` … `4N+3`**:
+
+| offset | joint | axis | servo |
+|---|---|---|---|
+| +0 | hip X — coxa yaw | vertical | 80 kg·cm |
+| +1 | hip Y — hip lift | horizontal | 80 kg·cm |
+| +2 | knee | horizontal | 45 kg·cm |
+| +3 | ankle | horizontal | 45 kg·cm |
+
+24 servos across two PCA9685 boards, so the split falls out of the arithmetic:
+
+| board | address | channels | legs |
+|---|---|---|---|
+| 0 | 0x40 | 0–15 | legs 0, 1, 2, 3 |
+| 1 | 0x41 | 0–7 | legs 4, 5 (8 spare channels) |
+
+Deriving the channel from `(leg, joint)` rather than storing a lookup table is deliberate:
+a hand-maintained map is one more thing that can disagree with the loom, and with 24 servos
+a single transposed pair is a leg that moves wrongly rather than a leg that fails to move —
+much harder to notice.
+
+⚠ **Extended servo leads are a real failure surface.** Each added crimp is a joint that can be
+marginal rather than open, which shows up as a brown-out under load rather than as a dead
+channel — and a dead channel is far easier to diagnose. The first fault on this bench was a
+**bent ground pin**: signal present, power present, no return path, and it looked exactly like
+a software bug. Probe each newly-wired channel on its own before it joins a multi-joint move.
+
 ## Three actuation constraints
 
 1. **24 joints, so two PCA9685 boards** at 0x40 and 0x41 (bridge A0 on the second) for 32
