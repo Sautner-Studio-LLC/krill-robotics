@@ -216,6 +216,51 @@ channel — and a dead channel is far easier to diagnose. The first fault on thi
 **bent ground pin**: signal present, power present, no return path, and it looked exactly like
 a software bug. Probe each newly-wired channel on its own before it joins a multi-joint move.
 
+## Bench findings — hip v0.1 (2026-09-20)
+
+First leg, first-draft prints, clamped to the bench by a draft hex body. All four servos wired.
+
+**Coxa yaw range is bounded by adjacent-leg clearance, not by the frame.** With stand-in
+servos in the neighbouring hip slots, yaw contacted a neighbour well before anything else.
+That couples two parameters previously treated as independent: **hip circle radius and usable
+yaw range are the same knob.** Legs at 60° on a circle of radius R have a collision angle set
+by R and the leg's width at the hip, so widening yaw travel means a bigger circle or a
+narrower hip — not a software limit change.
+
+This matters for the stair case specifically. Footholds are 331 mm apart and ±30° of yaw at
+R ≈ 120 mm yields only ~120 mm of tangential stride, so a single stride cannot reach the next
+tread. The remedies are more yaw or a larger circle, and the bench says those are one remedy.
+
+**Hip lift gave a clean 180°** under full gravity load — the whole leg, both 45 kg servos and
+a 350 mm tibia on a long arm — with no rail sag at any checkpoint, on extended servo leads.
+
+**The hip joint then snapped**, at a weak point already identified before the test. That is a
+functional test doing its job on a first-draft part. v0.2 reinforces exactly that location.
+
+> ⚠ **Servos have range limits, and the joint's clearance is not the actuator's travel.** A
+> 270° servo reaches 270° of whatever the joint allows, so designing 360° of clearance buys
+> self-collision freedom, not rotation. Commanding past the servo's travel drives it into its
+> own internal gearbox stop.
+>
+> ⚠ **Stalling is the damage mode, not over-travel.** A servo driven into an immovable object
+> draws hard with no motion and heats fast. It is why range finding here uses **expanding
+> sweeps** — out, touch, immediately back — so contact lasts one step rather than however long
+> a one-way sweep takes to finish. Never dwell against a stop.
+
+### What v0.2 changes, and a consequence worth tracking
+
+In v0.1 the lift servo sat **on top of** the yaw servo, jutting out half its width. v0.2
+**stacks** them. Two things follow:
+
+1. **The lateral offset between the yaw and lift axes shrinks or vanishes.** That is
+   `coxaLateralOffsetMm` in the spec, carried deliberately as a non-zero-capable parameter
+   because printed brackets usually have one and retrofitting the offset-shoulder correction
+   later invalidates every pinned number. A stacked hip makes the 0.0 default more likely to
+   be literally true — which simplifies the coxa closed form.
+2. **A narrower hip buys back yaw range**, via the neighbour-clearance coupling above. So the
+   change that fixes the break may also recover some of the stride the stair case is short of.
+   Worth measuring once v0.2 is on the bench.
+
 ## Three actuation constraints
 
 1. **24 joints, so two PCA9685 boards** at 0x40 and 0x41 (bridge A0 on the second) for 32
