@@ -265,11 +265,25 @@ In v0.1 the lift servo sat **on top of** the yaw servo, jutting out half its wid
 
 1. **24 joints, so two PCA9685 boards** at 0x40 and 0x41 (bridge A0 on the second) for 32
    channels. See [pi-bringup.md](pi-bringup.md) for identifying them on the bus.
-2. **Run the PWM frame at 200 Hz rather than 50 Hz if the servos tolerate it.** The
-   PCA9685's 12 bits divide the *period*, so 200 Hz gives a 1.24 µs LSB instead of
-   4.88 µs — for a 270° servo over 500–2500 µs that is 0.167 °/LSB instead of 0.66, a 4×
-   resolution improvement. **Verify on one servo first**: a digital servo updated four
-   times as often draws more current and runs hotter.
+2. **Run the PWM frame at 200 Hz. Verified on hardware 2026-09-21** — four DS5180-class
+   servos driving a real leg, visibly smoother than the same motion at 50 Hz, no brown-out.
+   The PCA9685's 12 bits divide the *period*, so 200 Hz (prescale 30, actually 196.89 Hz)
+   gives a 1.24 µs tick against 4.88 µs at 50 Hz:
+
+   | frame | tick | angular step | steps/sec |
+   |---|---|---|---|
+   | 50 Hz | 4.88 µs | **0.61°** | 50 |
+   | 200 Hz | 1.24 µs | **0.151°** | 200 |
+
+   ⚠ **Measure angular step, not "ticks per update".** Raising the frame scales the tick
+   size *and* the update rate together, so ticks-per-update barely moves and suggests
+   nothing improved. What changes is the size of the quantum in degrees, which is what an
+   eye can actually see — 4× finer here.
+
+   ⚠ **Quantization shows up where motion is SLOWEST.** A sine is fastest at its zero
+   crossing and slowest at its peaks, so a sine-driven joint looks smooth mid-stroke and
+   steps visibly at the turnarounds. Real gait is mostly constant-velocity stance, which is
+   the regime where this is least visible — so a sine test overstates the problem.
 3. **Phase-stagger the channel ON counts.** With every channel starting its pulse on the
    same edge, the pack sees a simultaneous current surge 16× per period. Stagger them
    across the period instead. ⚠ A PCA9685 brown-out reset is **silent** — `MODE1` returns
