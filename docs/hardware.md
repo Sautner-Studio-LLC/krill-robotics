@@ -216,6 +216,38 @@ channel — and a dead channel is far easier to diagnose. The first fault on thi
 **bent ground pin**: signal present, power present, no return path, and it looked exactly like
 a software bug. Probe each newly-wired channel on its own before it joins a multi-joint move.
 
+## Horn indexing is a design parameter (2026-09-21)
+
+**Mount every servo horn at an angle, indexed toward the range the joint actually uses.**
+
+A 270° servo has a fixed travel budget, and where that budget sits relative to the joint is
+set once, mechanically, when the horn goes on the spline. Centring the horn on the joint's
+neutral spends half the budget on each side — which is only correct if the joint works
+symmetrically about neutral. This one does not.
+
+**The robot is either walking or folded. It is never lying flat with a leg fully extended.**
+So travel reserved for full extension is travel spent on a pose that never occurs, and it is
+exactly the travel needed at the other end to stow a limb.
+
+Verified on the bench: with the horn centred, the ankle joint swung cleanly through its arc
+but **could not reach a fold-back** — the servo ran out before the joint did. Re-indexing the
+horn a few degrees toward the fold produced **a near-complete fold back, enough for the joint
+to serve as a knee**, at the cost of extension range that has no use.
+
+Consequences worth carrying:
+
+- **Per-joint travel is asymmetric about the servo's mechanical centre**, deliberately. A
+  spec that assumes `angleMin`/`angleMax` straddle neutral evenly will be wrong for every
+  joint on this machine.
+- **The horn index is not trim.** Trim corrects a unit's manufacturing zero and is small;
+  the index is a design decision worth tens of degrees. Conflating them means a
+  recalibration can silently undo a design choice.
+- **Decide it before replicating.** This is one mechanical choice repeated 24 times. Getting
+  it wrong is not a software fix.
+- ⚠ **The fold, neutral and usable-extension pulse values are not yet recorded.** They are
+  the first three numbers per joint that would not be estimates. Capture them on the next
+  bench session.
+
 ## Bench findings — hip v0.1 (2026-09-20)
 
 First leg, first-draft prints, clamped to the bench by a draft hex body. All four servos wired.
