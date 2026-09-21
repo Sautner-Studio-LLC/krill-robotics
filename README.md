@@ -8,8 +8,12 @@ hardware, motion on the Pi, and judgement somewhere else on the mesh. This repo 
 Pi-side and motion-side software, plus the operational notes for getting a Pi 5 to drive
 24 servos over I²C.
 
-> **Status: early.** The first leg is on the printer. What exists today is the Pi bring-up
-> automation and the design rules below. The motion library is next.
+> **Brand new project, started September 2026 — stay tuned.**
+>
+> One leg exists and moves: four joints under coordinated command, driven from a Pi 5 over
+> I²C. What is published here so far is the Pi bring-up automation, the bench tooling, and
+> the design rules below — the things that turned out to be worth writing down. The motion
+> library is next, and it is waiting on measured link lengths rather than on code.
 
 ## Shape of the thing
 
