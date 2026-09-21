@@ -280,6 +280,22 @@ In v0.1 the lift servo sat **on top of** the yaw servo, jutting out half its wid
    nothing improved. What changes is the size of the quantum in degrees, which is what an
    eye can actually see — 4× finer here.
 
+   **Thermal, measured 2026-09-21:** all four servos at **74.2 °F / 23.4 °C — room
+   temperature, and identical to each other** after a 20 s coordinated run. That settles
+   the frame rate: a servo's internal loop runs 4× as often at 200 Hz, and if that cost
+   real current it would show even unloaded.
+
+   ⚠ Scope it honestly — it does **not** establish thermal safety under load. Twenty
+   seconds on a free-hanging leg is very little energy, and an IR gun reads the *case*
+   while the windings and driver FETs are what fail; case temperature lags internal
+   temperature badly. The real thermal case is holding a loaded stance, which this robot
+   is designed never to do (see the never-stands-still rule) — so the worst case is
+   *walking*, which is duty-cycled by nature.
+
+   **Four identical readings is a free mechanical cross-check** worth repeating routinely.
+   A joint that binds, is misaligned, or is partially stalled makes its servo do more work
+   than its neighbours, and an IR sweep catches that when the motion still looks fine.
+
    ⚠ **Quantization shows up where motion is SLOWEST.** A sine is fastest at its zero
    crossing and slowest at its peaks, so a sine-driven joint looks smooth mid-stroke and
    steps visibly at the turnarounds. Real gait is mostly constant-velocity stance, which is
