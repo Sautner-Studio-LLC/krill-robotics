@@ -264,6 +264,30 @@ protractor. Two minutes, and it invalidates or confirms a lot.
   are currently different languages
 - ~600–900 g of unmodelled mass, which scales every torque figure linearly
 
+## ⚠ Verify the channel map on every leg before driving it
+
+**Two hip servos were plugged in swapped, and roughly an hour went into commanding the wrong
+joint.** The symptom was a "hip lift" that moved the femur left and right, and before that, a
+move that produced no visible motion at all — which read as a dead channel.
+
+Nothing in software can catch this. The bus is fine, the registers are correct, the servo
+responds. It is only wrong relative to a physical expectation, and **a transposed pair makes a
+leg move *wrongly* rather than fail** — far harder to notice than a dead channel, and it
+survives every electrical check.
+
+**The guard: after wiring each leg, sweep one channel at a time and name the joint that
+moves**, before anything drives a multi-joint pose. Three minutes per leg, and it catches a
+transposition while it is still one connector rather than a finished loom. `tools/` has
+`hold.py` and `pose.py` for exactly this.
+
+⚠ And **drop every channel limp before unplugging or reseating a servo.** A servo reconnected
+to a channel that is still driving snaps to that position the instant it makes contact —
+which is precisely when there are hands in the mechanism.
+
+This is the third fault on this bench that presented as a software problem and was not: a bent
+ground pin, an unpowered servo rail, and now a transposed pair. **Suspect the physical layer
+first.**
+
 ## Servo channel map
 
 Fixed convention, the same for all six legs — **leg *N* occupies channels `4N` … `4N+3`**:
@@ -300,7 +324,11 @@ The bridge between the model's degrees and the bench's microseconds. Servos conf
 
 | leg 1 joint | channel | pulse | pose | measured |
 |---|---|---|---|---|
-| hip lift | 1 | **1560 µs** | **femur square to the body** (90° out) | 2026-09-22, speed square |
+| **coxa yaw** | **0** | **1560 µs** | **femur square to the body** (90° out) | 2026-09-22, speed square |
+
+⚠ **This datum belongs to the YAW joint, not the lift** — and that it was ever attributed
+to the lift is the story below. "Square to the body" is a yaw concept; a lift axis has no such
+position, only up and down. The description did not match the joint, and that was the tell.
 
 ⚠ **Datum is "square to the body", not "horizontal to the bench".** They are not the same:
 with the leg on a bench the tibia props the rig up, tilting it, so bench-horizontal depends on
