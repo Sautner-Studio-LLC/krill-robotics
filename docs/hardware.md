@@ -187,6 +187,83 @@ break never reaches thermal steady state. It also sizes the pack — a 20-minute
 the order of 25–37 Wh, so a pack sized for hour-long missions is dead weight, and weight
 is the most leveraged number in the torque budget.
 
+## Measured geometry (Fusion, 2026-09-22) — supersedes the estimates below
+
+`cad/export/leg-geometry.json` is the extract: joint axes read from the servo horn hubs,
+per-component mass at infill-calibrated densities, and a named standing pose. It flags its
+own inferences, which is why it can be trusted where it doesn't.
+
+**Chain, as in-plane link lengths** (perpendicular distance between parallel axes):
+
+| from → to | length | axial offset |
+|---|---|---|
+| coxa yaw → hip lift | 0.08 mm — **the axes intersect** | — |
+| hip lift → knee | 162.25 mm | −73.6 mm |
+| knee → ankle | **352.79 mm** | +10.66 mm |
+| ankle → foot contact | **235.19 mm** | +17.02 mm |
+
+Reach from the hip lift axis is **750 mm**. Hip circle radius **72.7 mm** (legs 3–5 sit
+0.5–1.0 mm further out). Modelled standing pose: **825 mm span, body 325 mm up**.
+
+> The stacked v0.2 hip did what it was predicted to: the coxa-yaw and hip-lift axes now
+> intersect within **0.08 mm**, so `coxaLateralOffsetMm = 0` is literally true and the coxa
+> closed form simplifies for real rather than by assumption.
+
+**Mass:** 6 × 643.8 g of leg + 253.2 g body core = **4.12 kg modelled**, excluding fasteners,
+wiring, electronics, battery and bearings — call it **4.7–5.0 kg** assembled. Servos are
+2 × 165 g (DS5180SG) + 2 × 60 g (DS3225MG) per leg, so **2.7 kg of the machine is servo**.
+
+### ⚠ The knee is the binding joint, and it is over budget
+
+Moment arms are **X-offsets, not horizontal distances** — the pitch axes lie along Z, so for
+a vertical load `tau = -r_x · F` and the Z component contributes nothing.
+
+| joint | lever | need @ ideal ⅓ | available | |
+|---|---|---|---|---|
+| hip lift | 340 mm | 56.7 kg·cm | 90.6 @ 6.6 V | 63%, SF 1.60 |
+| **knee** | **185 mm** | **30.8 kg·cm** | **25.0** | **123%, SF 0.81** |
+| ankle | 88 mm | 14.7 kg·cm | 25.0 | 59%, SF 1.69 |
+
+At worst-case load share (0.5, not 1/n — load splits by where the CoM falls in the support
+triangle) the knee reaches **185%**.
+
+> ⚠ **Two errors in opposite directions moved the binding constraint, and both were in the
+> brief.** The hip servos were specced at 65 kg·cm @ 7.4 V; the DS5180SG datasheet says
+> **98** (85 @ 6 V, 105 @ 8.4 V), so the hip is ~50% stronger than budgeted and comfortable.
+> The knee and ankle were specced at 45 kg·cm; the model has **DS3225MG, 25 kg class**, ~45%
+> weaker, on the joint with the second-longest lever. Earlier analysis concluded hip lift
+> binds. It does not — **the knee does.**
+>
+> ⚠ **Unresolved: is a 25 kg or a 45 kg servo actually fitted at knee and ankle?** At 45 kg·cm
+> the knee is 68% at ideal share and marginal at worst; at 25 kg it cannot hold the pose.
+> This one fact decides whether the modelled stance is achievable.
+
+In-budget levers at M = 5.0 kg, worst-case share:
+
+| joint | SF 1.5 | SF 2.0 | actual |
+|---|---|---|---|
+| hip lift | 242 mm | 181 mm | 340 |
+| knee | 67 mm | 50 mm | 185 |
+| ankle | 67 mm | 50 mm | 88 |
+
+### ⚠⚠ 180° or 270°? The same pulse range means both
+
+The DS5180SG datasheet: *"Running Degree: 180±3° (PWM 500–2500 µs) **or** 270±3°
+(PWM 500–2500 µs)"*. **Both variants take the identical pulse range.** Every angle computed
+here assumes 270°, i.e. 7.41 µs/degree. If 180° variants are fitted it is 11.1 µs/degree and
+**every derived angle is wrong by 50%**, with nothing in software able to tell.
+
+Settle it on the bench: command a known pulse step, measure the actual sweep with a
+protractor. Two minutes, and it invalidates or confirms a lot.
+
+### Still missing from the model
+
+- DS3225MG datasheet — its torque figure is inferred and is now the binding number
+- Joint rotation limits — none modelled on any of the four joints
+- The **pulse-width ↔ model-angle mapping**; the model's degrees and the bench's microseconds
+  are currently different languages
+- ~600–900 g of unmodelled mass, which scales every torque figure linearly
+
 ## Servo channel map
 
 Fixed convention, the same for all six legs — **leg *N* occupies channels `4N` … `4N+3`**:
