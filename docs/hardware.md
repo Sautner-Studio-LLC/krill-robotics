@@ -293,6 +293,27 @@ channel — and a dead channel is far easier to diagnose. The first fault on thi
 **bent ground pin**: signal present, power present, no return path, and it looked exactly like
 a software bug. Probe each newly-wired channel on its own before it joins a multi-joint move.
 
+## Measured calibration points
+
+The bridge between the model's degrees and the bench's microseconds. Servos confirmed as
+**270° variants**, so **7.41 µs/degree** across the 500–2500 µs range.
+
+| leg 1 joint | channel | pulse | pose | measured |
+|---|---|---|---|---|
+| hip lift | 1 | **1560 µs** | **femur square to the body** (90° out) | 2026-09-22, speed square |
+
+⚠ **Datum is "square to the body", not "horizontal to the bench".** They are not the same:
+with the leg on a bench the tibia props the rig up, tilting it, so bench-horizontal depends on
+how the thing happens to be clamped. Perpendicular-to-body is a property of the robot and is
+the one that survives being unclamped.
+
+⚠ **Method note, learned the hard way.** Stepping through a sequence and asking which stop
+looked right does not work: the operator is at the bench watching the leg, not reading a
+terminal, so the stops are unlabelled and have to be *counted* — which introduced an
+immediate 1560-vs-1590 ambiguity over whether "the third move" meant the third position or
+the third transition. **Hold ONE pose and ask a yes/no question.** `tools/` has `hold.py`
+(one channel) and `pose.py` (several at once) for exactly this.
+
 ## Horn indexing is a design parameter (2026-09-21)
 
 **Mount every servo horn at an angle, indexed toward the range the joint actually uses.**
