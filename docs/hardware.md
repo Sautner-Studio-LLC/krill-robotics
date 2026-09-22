@@ -325,6 +325,8 @@ The bridge between the model's degrees and the bench's microseconds. Servos conf
 | leg 1 joint | channel | pulse | pose | measured |
 |---|---|---|---|---|
 | **coxa yaw** | **0** | **1560 µs** | **femur square to the body** (90° out) | 2026-09-22, speed square |
+| coxa yaw | 0 | — | left/right motion | confirmed on hardware |
+| **hip lift** | **1** | **higher µs = UP** | femur raises with increasing pulse | confirmed on hardware |
 
 ⚠ **This datum belongs to the YAW joint, not the lift** — and that it was ever attributed
 to the lift is the story below. "Square to the body" is a yaw concept; a lift axis has no such
