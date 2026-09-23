@@ -1,554 +1,571 @@
 {
-  "schema": "hexbot-leg-geometry/1",
-  "generated_utc": "2026-09-22T15:47:00Z",
+  "schema": "hexbot-leg-geometry/2",
+  "generated_utc": "2026-09-23T20:56:37Z",
+  "replaces": "hexbot-leg-geometry/1 (old leg design, pre-redesign; discard it)",
   "source": {
     "fusion_project": "Krill",
-    "folder": "HexBot (requested path /krill/hexapod maps to Fusion project Krill, folder HexBot)",
-    "document": "Assembly: Complete",
-    "version": 24,
-    "leg_instance": "Assembly: Leg:1",
-    "note": "All six legs are instances of one Assembly: Leg file; link geometry and masses are identical per leg. Only mounting position differs (see hip_circle)."
+    "folder": "HexBot/Assembly",
+    "document": "Assembly: Leg",
+    "version": 15,
+    "note": "Single leg assembly. There is currently no six-legged assembly in the project, so all body-relative values (hip circle, mounting azimuth) are unavailable."
   },
   "frame": {
-    "name": "body frame",
+    "name": "leg mounting frame",
     "units": "mm, degrees, grams",
-    "origin": "Body Core component origin = body centre",
-    "axes": "+Y up (normal to ground plane); +X outward toward Leg 1 coxa; +Z = X cross Y (right-handed). Orientation identical to the Fusion Assembly: Complete root frame.",
-    "origin_in_fusion_frame_mm": [
-      0.0,
-      325.06,
-      -3.82
-    ],
-    "ground_plane_y_mm": -325.06
+    "origin": "intersection of the coxa yaw axis with the mount seat plane (the flat underside of 80KG SERVO MOUNT:1 that lands on the body plate top face)",
+    "axes": "+Y along the coxa yaw axis, pointing away from the body plate (robot up); +X outward along the leg (toward the toe, perpendicular to +Y); +Z = X cross Y",
+    "mounting_note": "When fitted, the body plate top surface is the plane Y=0 and the mount spigot sits about 10 mm into the plate pocket (Y=-10 to 0)."
   },
   "pose": {
-    "description": "Saved default standing pose: body level, all six toes on the ground plane. All axis positions and CoMs below are for this pose.",
-    "parameters_source": "HexBot Parameters (single source; derived into Assembly: Hip, Femure, Tibia)",
-    "parameters": {
-      "leg_hip_yaw": {
-        "value": "0 deg",
-        "comment": "Hip horizontal servo (80kg): swing about vertical. 0 = square to body"
-      },
-      "leg_hip_lift": {
-        "value": "20 deg",
-        "comment": "Hip vertical servo (80kg): + raises the femur at the hip"
-      },
-      "leg_femur": {
-        "value": "60 deg",
-        "comment": "Femur servo (25kg DS3225MG): + lowers the knee"
-      },
-      "leg_tibia": {
-        "value": "-75 deg",
-        "comment": "Tibia servo (25kg DS3225MG): - angles the tibia down toward the toe"
-      }
-    }
+    "description": "Current pose as saved in Assembly: Leg; NOT a standing pose.",
+    "joint_rotations_deg": {
+      "coxa_yaw": 0.0,
+      "hip_lift": -35.0,
+      "knee": 330.0,
+      "ankle": 70.0
+    },
+    "note": "Link lengths below are pose-independent (rigid links). Axis positions are given in this pose."
   },
   "joints": {
     "coxa_yaw": {
       "axis_point_mm": [
-        72.7,
-        49.18,
-        -0.07
+        0.0,
+        63.06,
+        -0.0
       ],
       "axis_direction": [
-        -0.0021,
+        0.0,
         1.0,
-        0.0006
+        -0.0
       ],
-      "fusion_joint": "Assembly: Hip / Rotate Hip Joint Horizontal",
-      "servo": "DS5180SG (80 kg class)",
-      "model_angle_expression": "90.0 deg + leg_hip_yaw_Ref",
-      "drive_parameter": "leg_hip_yaw",
-      "drive_parameter_value": "0 deg",
-      "drive_parameter_comment": "Hip horizontal servo (80kg): swing about vertical. 0 = square to body",
-      "modelled_limits": null
+      "fusion_joint": "Horizontal Rotate Hip Joint",
+      "servo": "80 kg (DS5180SG class)",
+      "rotation_value_deg": 0.0,
+      "joint_angle_expression": "90.0 deg",
+      "modelled_limits": null,
+      "driven_by_parameter": null
     },
     "hip_lift": {
       "axis_point_mm": [
-        72.64,
-        71.59,
-        42.23
+        2.86,
+        80.88,
+        -41.35
       ],
       "axis_direction": [
-        -0.0021,
-        -0.0013,
-        1.0
+        0.0351,
+        0.0,
+        -0.9994
       ],
-      "fusion_joint": "Assembly: Hip / Rotate Hip Joint Vertival",
-      "servo": "DS5180SG (80 kg class)",
-      "model_angle_expression": "90.0 deg + leg_hip_lift_Ref",
-      "drive_parameter": "leg_hip_lift",
-      "drive_parameter_value": "20 deg",
-      "drive_parameter_comment": "Hip vertical servo (80kg): + raises the femur at the hip",
-      "modelled_limits": null
+      "fusion_joint": "Vertical Hip Joint",
+      "servo": "80 kg (DS5180SG class)",
+      "rotation_value_deg": -35.0,
+      "joint_angle_expression": "90.0 deg",
+      "modelled_limits": null,
+      "driven_by_parameter": null
     },
     "knee": {
       "axis_point_mm": [
-        228.18,
-        118.41,
-        -30.99
+        91.58,
+        146.59,
+        14.83
       ],
       "axis_direction": [
-        -0.0021,
-        -0.0013,
-        1.0
+        -0.0364,
+        -0.0017,
+        0.9993
       ],
-      "fusion_joint": "Femure / Revolute 35",
-      "servo": "DS3225MG (25 kg class)",
-      "model_angle_expression": "270.0 deg",
-      "drive_parameter": "leg_femur",
-      "drive_parameter_value": "60 deg",
-      "drive_parameter_comment": "Femur servo (25kg DS3225MG): + lowers the knee",
-      "modelled_limits": null
+      "fusion_joint": "Knee Joint",
+      "servo": "80 kg (DS5180SG class)",
+      "rotation_value_deg": 330.0,
+      "joint_angle_expression": "90.0 deg",
+      "modelled_limits": null,
+      "driven_by_parameter": null
     },
     "ankle": {
       "axis_point_mm": [
-        501.22,
-        -104.97,
-        -20.05
+        421.01,
+        174.4,
+        13.18
       ],
       "axis_direction": [
-        -0.0021,
-        -0.0013,
-        1.0
+        0.0364,
+        0.0017,
+        -0.9993
       ],
-      "fusion_joint": "Tibia / Rigid Motor Horn Joint",
+      "fusion_joint": "Tibia Joint",
       "servo": "DS3225MG (25 kg class)",
-      "model_angle_expression": "-90.0 deg",
-      "drive_parameter": "leg_tibia",
-      "drive_parameter_value": "-75 deg",
-      "drive_parameter_comment": "Tibia servo (25kg DS3225MG): - angles the tibia down toward the toe",
-      "modelled_limits": null
+      "rotation_value_deg": 70.0,
+      "joint_angle_expression": "-90.0 deg",
+      "modelled_limits": null,
+      "driven_by_parameter": null
     }
   },
   "foot_contact_point_mm": [
-    412.72,
-    -322.9,
-    -3.48
+    533.68,
+    -31.89,
+    -0.05
   ],
   "link_lengths": [
     {
       "from": "coxa_yaw",
       "to": "hip_lift",
+      "axis_angle_deg": 90.0,
       "axes_parallel": false,
-      "perpendicular_distance_mm": 0.08,
-      "axial_offset_mm": null,
-      "point_to_point_mm": 47.87
+      "common_normal_distance_mm": 1.41,
+      "point_to_point_mm": 45.12
     },
     {
       "from": "hip_lift",
       "to": "knee",
+      "axis_angle_deg": 0.123,
       "axes_parallel": true,
-      "perpendicular_distance_mm": 162.25,
-      "axial_offset_mm": -73.6,
-      "point_to_point_mm": 178.17
+      "perpendicular_distance_mm": 111.95,
+      "axial_offset_mm": -53.03,
+      "point_to_point_mm": 123.88
     },
     {
       "from": "knee",
       "to": "ankle",
+      "axis_angle_deg": 0.0,
       "axes_parallel": true,
-      "perpendicular_distance_mm": 352.79,
-      "axial_offset_mm": 10.66,
-      "point_to_point_mm": 352.95
+      "perpendicular_distance_mm": 330.32,
+      "axial_offset_mm": -13.69,
+      "point_to_point_mm": 330.61
     },
     {
       "from": "ankle",
       "to": "foot_contact",
-      "perpendicular_distance_mm": 235.19,
-      "axial_offset_mm": 17.02,
-      "point_to_point_mm": 235.8
+      "perpendicular_distance_mm": 234.81,
+      "axial_offset_mm": 16.97,
+      "point_to_point_mm": 235.43
     }
   ],
-  "hip_circle": {
-    "leg1_radius_mm": 72.7,
-    "definition": "horizontal distance from body centre to coxa yaw axis; azimuth measured from +X toward -Z",
-    "all_legs": [
-      {
-        "leg": 1,
-        "yaw_axis_point_mm": [
-          72.7,
-          46.03,
-          -0.07
-        ],
-        "radius_mm": 72.7,
-        "azimuth_deg": 0.06
-      },
-      {
-        "leg": 2,
-        "yaw_axis_point_mm": [
-          36.41,
-          46.03,
-          62.93
-        ],
-        "radius_mm": 72.7,
-        "azimuth_deg": -59.94
-      },
-      {
-        "leg": 3,
-        "yaw_axis_point_mm": [
-          36.79,
-          46.03,
-          -63.86
-        ],
-        "radius_mm": 73.7,
-        "azimuth_deg": 60.06
-      },
-      {
-        "leg": 4,
-        "yaw_axis_point_mm": [
-          -36.54,
-          46.03,
-          63.43
-        ],
-        "radius_mm": 73.2,
-        "azimuth_deg": -119.94
-      },
-      {
-        "leg": 5,
-        "yaw_axis_point_mm": [
-          -73.7,
-          46.03,
-          0.07
-        ],
-        "radius_mm": 73.7,
-        "azimuth_deg": -179.94
-      },
-      {
-        "leg": 6,
-        "yaw_axis_point_mm": [
-          -36.41,
-          46.03,
-          -62.93
-        ],
-        "radius_mm": 72.7,
-        "azimuth_deg": 120.06
-      }
-    ]
-  },
+  "hip_circle": null,
   "mass": {
-    "leg_total_g": 643.8,
+    "leg_total_g": 730.0,
     "leg_com_mm": [
-      193.58,
-      25.29,
-      -2.94
+      115.09,
+      101.33,
+      -2.93
     ],
-    "withheld_components": [],
     "components": [
       {
-        "component": "Component9",
-        "occurrence_path": "Assembly: Leg:1+Femure:1+DS3225MG 25KG Metal Horn:1+Metal Servo Arm (1):1+Metal Servo Arm:1+Component9:1",
-        "mass_g": 3.58,
+        "occurrence": "Dowle Rod Small:1",
+        "component": "Dowle Rod Small",
+        "mass_g": 0.37,
         "com_mm": [
-          221.62,
-          123.91,
-          -31.46
+          530.0,
+          -11.9,
+          -0.17
         ],
-        "volume_cm3": 1.327,
-        "material": "Aluminum",
-        "density_kg_m3": 2700.0,
-        "density_basis": "library material (Fusion Aluminum)",
-        "zero_volume_bodies_ignored": []
-      },
-      {
-        "component": "DS3225MG 25KG",
-        "occurrence_path": "Assembly: Leg:1+Femure:1+25K DS3225MG:1+DS3225MG 25KG:1",
-        "mass_g": 60.0,
-        "com_mm": [
-          219.2,
-          115.1,
-          -4.71
-        ],
-        "volume_cm3": 32.834,
-        "material": "DS3225MG servo (60 g)",
-        "density_kg_m3": 1827.4,
-        "density_basis": "density calibrated so model mass = vendor/datasheet weight; uniform density, so CoM is approximate",
-        "zero_volume_bodies_ignored": []
-      },
-      {
-        "component": "25K Servo Mount Hip",
-        "occurrence_path": "Assembly: Leg:1+Femure:1+25K Servo Mount Hip:1",
-        "mass_g": 8.85,
-        "com_mm": [
-          213.95,
-          113.51,
-          5.06
-        ],
-        "volume_cm3": 9.615,
-        "material": "PETG+ 15% infill (eff 0.92 g/cm3)",
-        "density_kg_m3": 920.4,
-        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
-        "zero_volume_bodies_ignored": []
-      },
-      {
-        "component": "Arm",
-        "occurrence_path": "Assembly: Leg:1+Femure:1+Upper Leg:1+Arm:1",
-        "mass_g": 45.36,
-        "com_mm": [
-          334.6,
-          29.62,
-          -44.84
-        ],
-        "volume_cm3": 110.765,
-        "material": "PETG+ 15% infill (eff 0.41 g/cm3)",
-        "density_kg_m3": 409.5,
-        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
-        "zero_volume_bodies_ignored": []
-      },
-      {
-        "component": "80KG Servo",
-        "occurrence_path": "Assembly: Leg:1+Assembly: Hip:1+80KG Servo:1",
-        "mass_g": 165.0,
-        "com_mm": [
-          91.38,
-          19.94,
-          0.02
-        ],
-        "volume_cm3": 92.331,
-        "material": "DS5180SG servo (165 g)",
-        "density_kg_m3": 1787.0,
-        "density_basis": "density calibrated so model mass = vendor/datasheet weight; uniform density, so CoM is approximate",
-        "zero_volume_bodies_ignored": [
-          "servo",
-          "servo (1)"
+        "material": "ABS Plastic",
+        "density_basis": "library material",
+        "bodies": [
+          {
+            "body": "Body1",
+            "material": "ABS Plastic",
+            "density_kg_m3": 1060.0,
+            "volume_cm3": 0.352
+          }
         ]
       },
       {
-        "component": "80KG SERVO MOUNT",
-        "occurrence_path": "Assembly: Leg:1+Assembly: Hip:1+80KG SERVO MOUNT:1",
-        "mass_g": 17.86,
+        "occurrence": "Toe:1",
+        "component": "Toe",
+        "mass_g": 3.01,
         "com_mm": [
-          89.66,
-          2.73,
-          0.01
+          534.77,
+          -20.2,
+          -0.01
         ],
-        "volume_cm3": 20.093,
-        "material": "PETG+ 15% infill (eff 0.89 g/cm3)",
-        "density_kg_m3": 889.1,
+        "material": "PETG+ 15% infill (eff 0.53 g/cm3)",
         "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
-        "zero_volume_bodies_ignored": []
+        "bodies": [
+          {
+            "body": "Toe",
+            "material": "PETG+ 15% infill (eff 0.53 g/cm3)",
+            "density_kg_m3": 530.4,
+            "volume_cm3": 5.677
+          }
+        ]
       },
       {
-        "component": "18T Horn",
-        "occurrence_path": "Assembly: Leg:1+Assembly: Hip:1+18T Horn:1",
-        "mass_g": 6.07,
+        "occurrence": "Lower Leg:1",
+        "component": "Lower Leg",
+        "mass_g": 32.54,
         "com_mm": [
-          84.78,
-          49.67,
-          -0.09
+          467.9,
+          96.64,
+          -2.12
         ],
-        "volume_cm3": 2.248,
-        "material": "Aluminum",
-        "density_kg_m3": 2700.0,
-        "density_basis": "library material (Fusion Aluminum)",
-        "zero_volume_bodies_ignored": []
+        "material": "PETG+ 15% infill (eff 0.41 g/cm3)",
+        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
+        "bodies": [
+          {
+            "body": "Lower Leg",
+            "material": "PETG+ 15% infill (eff 0.41 g/cm3)",
+            "density_kg_m3": 414.6,
+            "volume_cm3": 78.466
+          }
+        ]
       },
       {
-        "component": "80KG+Servo",
-        "occurrence_path": "Assembly: Leg:1+Assembly: Hip:1+80KG+Servo:1",
+        "occurrence": "80kg Servo:1",
+        "component": "80kg Servo",
         "mass_g": 165.0,
         "com_mm": [
-          91.33,
-          71.56,
+          18.61,
+          29.93,
+          0.8
+        ],
+        "material": "DS5180SG servo (165 g)",
+        "density_basis": "density calibrated to vendor/datasheet weight; uniform density so CoM is a centroid",
+        "bodies": [
+          {
+            "body": "servo (2)",
+            "material": "DS5180SG servo (165 g)",
+            "density_kg_m3": 1787.0,
+            "volume_cm3": 0.291
+          },
+          {
+            "body": "servo (3)",
+            "material": "DS5180SG servo (165 g)",
+            "density_kg_m3": 1787.0,
+            "volume_cm3": 92.04
+          }
+        ]
+      },
+      {
+        "occurrence": "80KG SERVO MOUNT:1",
+        "component": "80KG SERVO MOUNT",
+        "mass_g": 15.11,
+        "com_mm": [
+          24.0,
+          16.44,
+          0.99
+        ],
+        "material": "PETG+ 15% infill (eff 0.68 g/cm3)",
+        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
+        "bodies": [
+          {
+            "body": "80KG Servo Enclosure Body",
+            "material": "PETG+ 15% infill (eff 0.68 g/cm3)",
+            "density_kg_m3": 680.2,
+            "volume_cm3": 22.219
+          }
+        ]
+      },
+      {
+        "occurrence": "18T Horn:1",
+        "component": "18T Horn",
+        "mass_g": 6.07,
+        "com_mm": [
+          12.07,
+          60.23,
+          0.43
+        ],
+        "material": "Aluminum",
+        "density_basis": "library material",
+        "bodies": [
+          {
+            "body": "Body1",
+            "material": "Aluminum",
+            "density_kg_m3": 2700.0,
+            "volume_cm3": 2.248
+          }
+        ]
+      },
+      {
+        "occurrence": "80KG Servo Mount With Joint:1",
+        "component": "80KG Servo Mount With Joint",
+        "mass_g": 16.31,
+        "com_mm": [
+          21.35,
+          65.67,
+          0.52
+        ],
+        "material": "PETG+ 15% infill (eff 0.59 g/cm3)",
+        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
+        "bodies": [
+          {
+            "body": "80KG Servo Enclosure Body with horn mount",
+            "material": "PETG+ 15% infill (eff 0.59 g/cm3)",
+            "density_kg_m3": 589.7,
+            "volume_cm3": 27.65
+          }
+        ]
+      },
+      {
+        "occurrence": "80kg Servo:2",
+        "component": "80kg Servo",
+        "mass_g": 165.0,
+        "com_mm": [
+          20.31,
+          80.95,
+          -7.59
+        ],
+        "material": "DS5180SG servo (165 g)",
+        "density_basis": "density calibrated to vendor/datasheet weight; uniform density so CoM is a centroid",
+        "bodies": [
+          {
+            "body": "servo (2)",
+            "material": "DS5180SG servo (165 g)",
+            "density_kg_m3": 1787.0,
+            "volume_cm3": 0.291
+          },
+          {
+            "body": "servo (3)",
+            "material": "DS5180SG servo (165 g)",
+            "density_kg_m3": 1787.0,
+            "volume_cm3": 92.04
+          }
+        ]
+      },
+      {
+        "occurrence": "18T Horn:2",
+        "component": "18T Horn",
+        "mass_g": 6.07,
+        "com_mm": [
+          12.68,
+          87.77,
+          -38.17
+        ],
+        "material": "Aluminum",
+        "density_basis": "library material",
+        "bodies": [
+          {
+            "body": "Body1",
+            "material": "Aluminum",
+            "density_kg_m3": 2700.0,
+            "volume_cm3": 2.248
+          }
+        ]
+      },
+      {
+        "occurrence": "Hip Joint 2:1",
+        "component": "Hip Joint 2",
+        "mass_g": 22.97,
+        "com_mm": [
+          38.11,
+          108.02,
+          -41.73
+        ],
+        "material": "PETG+ 15% infill (eff 0.40 g/cm3)",
+        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
+        "bodies": [
+          {
+            "body": "Hip Joint",
+            "material": "PETG+ 15% infill (eff 0.40 g/cm3)",
+            "density_kg_m3": 402.0,
+            "volume_cm3": 57.147
+          }
+        ]
+      },
+      {
+        "occurrence": "80KG SERVO MOUNT:2",
+        "component": "80KG SERVO MOUNT",
+        "mass_g": 15.11,
+        "com_mm": [
+          105.21,
+          154.67,
+          -32.3
+        ],
+        "material": "PETG+ 15% infill (eff 0.68 g/cm3)",
+        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
+        "bodies": [
+          {
+            "body": "80KG Servo Enclosure Body",
+            "material": "PETG+ 15% infill (eff 0.68 g/cm3)",
+            "density_kg_m3": 680.2,
+            "volume_cm3": 22.219
+          }
+        ]
+      },
+      {
+        "occurrence": "80kg Servo:3",
+        "component": "80kg Servo",
+        "mass_g": 165.0,
+        "com_mm": [
+          108.12,
+          157.2,
+          -17.7
+        ],
+        "material": "DS5180SG servo (165 g)",
+        "density_basis": "density calibrated to vendor/datasheet weight; uniform density so CoM is a centroid",
+        "bodies": [
+          {
+            "body": "servo (2)",
+            "material": "DS5180SG servo (165 g)",
+            "density_kg_m3": 1787.0,
+            "volume_cm3": 0.291
+          },
+          {
+            "body": "servo (3)",
+            "material": "DS5180SG servo (165 g)",
+            "density_kg_m3": 1787.0,
+            "volume_cm3": 92.04
+          }
+        ]
+      },
+      {
+        "occurrence": "18T Horn:3",
+        "component": "18T Horn",
+        "mass_g": 6.07,
+        "com_mm": [
+          103.71,
+          147.64,
           12.44
         ],
-        "volume_cm3": 92.331,
-        "material": "DS5180SG servo (165 g)",
-        "density_kg_m3": 1787.0,
-        "density_basis": "density calibrated so model mass = vendor/datasheet weight; uniform density, so CoM is approximate",
-        "zero_volume_bodies_ignored": [
-          "servo",
-          "servo (1)"
+        "material": "Aluminum",
+        "density_basis": "library material",
+        "bodies": [
+          {
+            "body": "Body1",
+            "material": "Aluminum",
+            "density_kg_m3": 2700.0,
+            "volume_cm3": 2.248
+          }
         ]
       },
       {
-        "component": "80KG Servo Mount With Joint",
-        "occurrence_path": "Assembly: Leg:1+Assembly: Hip:1+80KG Servo Mount With Joint:1",
-        "mass_g": 16.97,
+        "occurrence": "Upper Leg:1",
+        "component": "Upper Leg",
+        "mass_g": 39.24,
         "com_mm": [
-          92.35,
-          65.21,
-          0.29
+          233.48,
+          157.68,
+          28.93
         ],
-        "volume_cm3": 21.482,
-        "material": "PETG+ 15% infill (eff 0.79 g/cm3)",
-        "density_kg_m3": 790.1,
+        "material": "PETG+ 15% infill (eff 0.43 g/cm3)",
         "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
-        "zero_volume_bodies_ignored": []
+        "bodies": [
+          {
+            "body": "Femur Bone",
+            "material": "PETG+ 15% infill (eff 0.43 g/cm3)",
+            "density_kg_m3": 432.2,
+            "volume_cm3": 90.804
+          }
+        ]
       },
       {
-        "component": "18T Horn",
-        "occurrence_path": "Assembly: Leg:1+Assembly: Hip:1+18T Horn:2",
-        "mass_g": 6.07,
+        "occurrence": "25K Servo Mount:1",
+        "component": "25K Servo Mount",
+        "mass_g": 8.53,
         "com_mm": [
-          83.98,
-          75.77,
-          42.73
+          405.71,
+          172.57,
+          36.39
         ],
-        "volume_cm3": 2.248,
-        "material": "Aluminum",
-        "density_kg_m3": 2700.0,
-        "density_basis": "library material (Fusion Aluminum)",
-        "zero_volume_bodies_ignored": []
-      },
-      {
-        "component": "Hip Joint 2",
-        "occurrence_path": "Assembly: Leg:1+Assembly: Hip:1+Hip Joint 2:1",
-        "mass_g": 41.43,
-        "com_mm": [
-          175.24,
-          98.62,
-          39.88
-        ],
-        "volume_cm3": 112.137,
-        "material": "PETG+ 15% infill (eff 0.37 g/cm3)",
-        "density_kg_m3": 369.5,
+        "material": "PETG+ 15% infill (eff 1.03 g/cm3)",
         "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
-        "zero_volume_bodies_ignored": []
+        "bodies": [
+          {
+            "body": "45K Servo Mount Body (1)",
+            "material": "PETG+ 15% infill (eff 1.03 g/cm3)",
+            "density_kg_m3": 1035.0,
+            "volume_cm3": 8.239
+          }
+        ]
       },
       {
-        "component": "Component9",
-        "occurrence_path": "Assembly: Leg:1+Tibia:1+DS3225MG 25KG Metal Horn:1+Metal Servo Arm (1):1+Metal Servo Arm:1+Component9:1",
-        "mass_g": 3.58,
-        "com_mm": [
-          504.81,
-          -97.2,
-          -19.56
-        ],
-        "volume_cm3": 1.327,
-        "material": "Aluminum",
-        "density_kg_m3": 2700.0,
-        "density_basis": "library material (Fusion Aluminum)",
-        "zero_volume_bodies_ignored": []
-      },
-      {
+        "occurrence": "25K DS3225MG:2+DS3225MG 25KG:1",
         "component": "DS3225MG 25KG",
-        "occurrence_path": "Assembly: Leg:1+Tibia:1+25K DS3225MG:1+DS3225MG 25KG:1",
         "mass_g": 60.0,
         "com_mm": [
-          495.57,
-          -101.39,
-          -46.36
+          410.76,
+          173.56,
+          34.42
         ],
-        "volume_cm3": 32.834,
         "material": "DS3225MG servo (60 g)",
-        "density_kg_m3": 1827.4,
-        "density_basis": "density calibrated so model mass = vendor/datasheet weight; uniform density, so CoM is approximate",
-        "zero_volume_bodies_ignored": []
+        "density_basis": "density calibrated to vendor/datasheet weight; uniform density so CoM is a centroid",
+        "bodies": [
+          {
+            "body": "Body1",
+            "material": "DS3225MG servo (60 g)",
+            "density_kg_m3": 1827.4,
+            "volume_cm3": 0.106
+          },
+          {
+            "body": "Body2",
+            "material": "DS3225MG servo (60 g)",
+            "density_kg_m3": 1827.4,
+            "volume_cm3": 32.728
+          }
+        ]
       },
       {
-        "component": "25K Servo Mount Tibia",
-        "occurrence_path": "Assembly: Leg:1+Tibia:1+25K Servo Mount Tibia:1",
-        "mass_g": 7.77,
+        "occurrence": "DS3225MG 25KG Metal Horn:1+Metal Servo Arm (1):1+Metal Servo Arm:1+Component9:1",
+        "component": "Component9",
+        "mass_g": 3.58,
         "com_mm": [
-          499.21,
-          -104.17,
-          -48.57
+          417.56,
+          182.18,
+          9.6
         ],
-        "volume_cm3": 8.422,
-        "material": "PETG+ 15% infill (eff 0.92 g/cm3)",
-        "density_kg_m3": 923.0,
-        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
-        "zero_volume_bodies_ignored": []
-      },
-      {
-        "component": "Tibia Bone",
-        "occurrence_path": "Assembly: Leg:1+Tibia:1+Lower Leg:1+Tibia Bone:1",
-        "mass_g": 32.6,
-        "com_mm": [
-          463.11,
-          -188.8,
-          -7.36
-        ],
-        "volume_cm3": 78.62,
-        "material": "PETG+ 15% infill (eff 0.41 g/cm3)",
-        "density_kg_m3": 414.6,
-        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
-        "zero_volume_bodies_ignored": []
-      },
-      {
-        "component": "Toe",
-        "occurrence_path": "Assembly: Leg:1+Toe:1",
-        "mass_g": 3.6,
-        "com_mm": [
-          410.95,
-          -311.86,
-          -3.5
-        ],
-        "volume_cm3": 5.163,
-        "material": "PETG+ 15% infill (eff 0.70 g/cm3)",
-        "density_kg_m3": 697.1,
-        "density_basis": "geometry-estimated effective density (PETG+ 1270 kg/m3 solid, 2 walls ~0.84 mm, 15% infill)",
-        "zero_volume_bodies_ignored": []
+        "material": "Aluminum",
+        "density_basis": "library material",
+        "bodies": [
+          {
+            "body": "Body1",
+            "material": "Aluminum",
+            "density_kg_m3": 2700.0,
+            "volume_cm3": 1.327
+          }
+        ]
       }
     ],
-    "body_core": {
-      "mass_g": 253.2,
-      "com_mm": [
-        0.0,
-        -3.98,
-        0.0
-      ],
-      "material": "PETG+ 15% infill (eff 0.38 g/cm3)",
-      "density_kg_m3": 378.3,
-      "density_basis": "geometry-estimated effective density"
-    },
     "not_modelled": "fasteners, wiring, electronics, battery, bearings"
   },
   "flags": [
     {
-      "item": "joint naming",
-      "type": "inferred",
-      "detail": "Mapped by chain order. coxa_yaw = lower 80 kg servo (Rotate Hip Joint Horizontal); hip_lift = upper 80 kg servo (Rotate Hip Joint Vertival); knee = first DS3225MG, which is physically at the HIP end of the upper leg (Femure / Revolute 35); ankle = second DS3225MG, physically at the geometric knee (Tibia / Rigid Motor Horn Joint). Confirm this matches the bench naming."
-    },
-    {
-      "item": "axis points",
+      "item": "servo layout changed",
       "type": "read",
-      "detail": "Axis lines from the servo output horn hub cylinders (read); point placed at the horn mid-plane along the axis. Cross-checked against Fusion joint origins: hip_lift, knee, ankle agree within 0.1 mm."
+      "detail": "This leg uses THREE 80 kg servos (coxa yaw, hip lift, knee) and ONE DS3225MG 25 kg at the ankle. The previous design had two 80 kg and two 25 kg, with the first 25 kg at the hip end of the upper leg. Do not compare bench numbers directly against schema v1 data."
     },
     {
-      "item": "coxa yaw horn",
-      "type": "model discrepancy",
-      "detail": "18T horn hub is ~0.8 mm off the modelled yaw joint axis; joint axis reported."
-    },
-    {
-      "item": "ankle servo",
-      "type": "model discrepancy",
-      "detail": "In the Tibia file the DS3225MG spline is ~3 mm off the horn it drives; horn/joint axis reported."
-    },
-    {
-      "item": "hip circle asymmetry",
+      "item": "joint axes",
       "type": "read",
-      "detail": "Legs 3-5 sit 0.5-1.0 mm further out than legs 1, 2, 6 due to small X offsets on the body-to-hip rigid joints."
+      "detail": "Axis point and direction taken from each revolute joint. On coxa yaw, hip lift and knee the two joint geometries coincide exactly (0.000 mm). On the ankle they are 4.0 mm apart along the axis, which is an axial offset only and does not move the axis line."
     },
     {
-      "item": "joint limits",
+      "item": "no joint limits",
       "type": "read",
-      "detail": "No rotation limits are modelled on any of the four joints. Servo datasheets: DS5180SG and DS3225MG are each sold in 180 or 270 degree variants (500-2500 us); which variant is fitted is not recorded in the model."
+      "detail": "None of the four joints has rotation limits enabled in the model. Servo travel must come from the servo spec and the bench."
     },
     {
-      "item": "joint zero / direction",
-      "type": "not verified",
-      "detail": "Model angle = fixed offset + parameter (see model_angle_expression). Sign conventions are the parameter comments as written; the mapping from model angle or parameter to servo pulse width (1500 us neutral) is not in the model and must be found on the bench."
+      "item": "no user parameters",
+      "type": "read",
+      "detail": "This assembly has no derived parameters and no parameter-driven joint angles; the four joints hold plain rotation values. The Leg Parameters file (HexBot/Params) is not derived into it. Joint zero and direction relative to servo pulse width are therefore not defined in the model."
+    },
+    {
+      "item": "pose is not a standing pose",
+      "type": "read",
+      "detail": "The toe sits only about 45 mm below the mount seat plane in this pose, so the leg is folded rather than standing. Use the link lengths, not the current axis positions, for kinematics."
+    },
+    {
+      "item": "frame is leg-local",
+      "type": "computed",
+      "detail": "Derived from the mount seat plane and the coxa yaw axis, because no six-legged assembly exists to supply a body frame. Hip circle radius and mounting azimuth are therefore not reported. The last measured hip circle radius was 72.7 mm (leg 1) on the previous assembly and previous mount design; treat as stale."
     },
     {
       "item": "printed part densities",
       "type": "inferred",
-      "detail": "Effective densities estimated from each part geometry for Bambu Studio defaults (2 walls, 15% sparse infill), solid PETG+ 1270 kg/m3. Expect about +/-15%; calibrate against slicer filament weights or a scale."
+      "detail": "Effective densities estimated per part geometry for Bambu Studio defaults (2 walls, 15% sparse infill), solid PETG+ 1270 kg/m3. Expect about +/-15%; calibrate against slicer filament weights or a scale."
     },
     {
       "item": "servo masses",
       "type": "inferred",
-      "detail": "DS5180SG 165 g (vendor listings: 162-175 g; not in the supplied DS5180SG.rtf); DS3225MG 60 g (DSServo datasheet). Uniform density over the model, so servo CoMs are geometric centroids, not true CoMs."
+      "detail": "80 kg servos 165 g each (vendor listings 162-175 g), DS3225MG 60 g (DSServo datasheet). Uniform density, so servo CoMs are geometric centroids."
     },
     {
-      "item": "horns",
-      "type": "read",
-      "detail": "Both horn models use Fusion library Aluminum (2700 kg/m3)."
+      "item": "Dowle Rod Small material",
+      "type": "questionable",
+      "detail": "Set to ABS Plastic (1060 kg/m3). The equivalent part in the old project was Steel, Alloy (7730 kg/m3). If this dowel is steel, its mass here is understated by about 7x (part volume 0.35 cm3, so roughly 0.4 g modelled vs 2.7 g actual)."
     },
     {
-      "item": "foot contact point",
+      "item": "near-parallel axes",
       "type": "computed",
-      "detail": "Mean of Toe mesh nodes within 0.3 mm of the lowest point in the standing pose."
+      "detail": "hip_lift, knee and ankle axes are parallel to within 0.15 deg. Link lengths for those pairs are perpendicular distances between the axis lines; axial_offset_mm is the sideways step along the axis between links."
     }
   ]
 }

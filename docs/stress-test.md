@@ -15,13 +15,18 @@ stops pushing.
 
 | joint | servo | mount must survive |
 |---|---|---|
-| coxa yaw, hip lift | DS5180SG | **> 98 kg·cm** (its 7.4 V rating) |
-| knee, ankle | DS3225MG | **> 25 kg·cm** |
+| coxa yaw, hip lift, **femur joint** | DS5180SG | **> 98 kg·cm** (its 7.4 V rating) |
+| tibia joint | DS3225MG | **> 25 kg·cm** |
 
-For context, standing in the modelled stance asks about **57 kg·cm** at the hip lift. So a mount
-built to survive the servo carries standing load with a factor of ~1.7 without anyone having to
-reason about load share or safety factors. That is the point of the criterion: it replaces a
-chain of assumptions with one number that is a property of the part.
+For context, standing asks roughly **57 kg·cm** at the hip lift. So a mount built to survive the
+servo carries standing load with a factor of ~1.7 without anyone having to reason about load
+share or safety factors. That is the point of the criterion: it replaces a chain of assumptions
+with one number that is a property of the part.
+
+> ⚠ **Leg v2 (2026-09-23) moved a mount from the 25 kg row to the 98 kg row.** The femur joint
+> is a DS5180SG now, so its mount has to survive **four times** what it did — and the v0.2-era
+> print strategy did not reach 98 kg·cm even at the hip. Three of the four mounts on this leg
+> are now held to the 98 kg·cm bar.
 
 ## One press loads every joint at once
 
@@ -49,9 +54,9 @@ each, not just the one being emphasised.
 |---|---|---|---|
 | **A** | femur extended, toe far outboard | **hip lift in bending**, long lever | the standing case, and the one that broke v0.2 |
 | **B** | tucked — toe close under the hip | hip mount in **shear and compression** | high force, low moment: a different failure mode entirely |
-| **C** | femur folded, knee far from the toe | **knee mount and the 353 mm bone** | the longest link carrying the largest bending moment |
-| **D** | shin steep, toe just below the ankle | **ankle mount**, short lever | the joint with the least torque margin at 25 kg·cm |
-| **E** | knee-walk — contact at the knee pad | **femur in compression**, hip near zero torque | the intended high-load mode; should be the *easiest* pose |
+| **C** | femur folded, femur joint far from the toe | **femur-joint mount and the 330 mm bone** | the longest link carrying the largest bending moment, and a mount newly held to 98 kg·cm |
+| **D** | tibia steep, toe just below the tibia joint | **tibia-joint mount**, short lever | the only joint still at 25 kg·cm, and the one the torque budget now binds on |
+| **E** | knee-walk — contact at the femur-joint pad | **femur in compression**, hip near zero torque | the intended high-load mode; should be the *easiest* pose |
 | **F** | leg near-vertical, toe under the hip | links in **pure compression** | tests the bones rather than the joints |
 | **G** | lateral — toe pushed sideways | **coxa yaw**, which carries all propulsion and side load | nothing has ever tested this axis |
 

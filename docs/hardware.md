@@ -14,10 +14,10 @@ and "which way is forward" is a software decision rather than a mechanical one.
 
 | # | joint | axis | carries gravity torque | servo class |
 |---|---|---|---|---|
-| 1 | coxa yaw | **vertical** | no | 80 kg·cm |
-| 2 | hip lift | horizontal | yes | 80 kg·cm |
-| 3 | knee | horizontal, ∥ to 2 | yes | 45 kg·cm |
-| 4 | ankle | horizontal, ∥ to 2 and 3 | yes | 45 kg·cm |
+| 1 | coxa yaw | **vertical** | no | DS5180SG, 98 kg·cm |
+| 2 | hip lift | horizontal | yes | DS5180SG, 98 kg·cm |
+| 3 | femur joint | horizontal, ∥ to 2 | yes | DS5180SG, 98 kg·cm |
+| 4 | tibia joint | horizontal, ∥ to 2 and 3 | yes | DS3225MG, 25 kg·cm |
 
 Joints 2–4 are three **coplanar pitch joints** in one vertical plane, and joint 1 rotates
 that plane about the vertical. So the leg is a **3-link planar chain with one redundant
@@ -45,18 +45,22 @@ workspace limit scales as 1/M.
 
 ## Why the fourth joint exists
 
-Not for torque. **For reach range.** Because the femur is much shorter than the tibia,
-the leg behaves almost like a fixed-length strut on a ball joint, and the reachable shell
-is thin:
+Not for torque. **For reach range.** Without it the leg is one short link plus one long
+rigid strut, so the reachable shell is a thin annulus — the foot can swing, but it cannot
+move much toward or away from the hip.
+
+Recomputed on the **leg v2** measured lengths (112 / 330 / 235 mm), comparing against a
+3-DOF leg with the tibia joint welded straight:
 
 | | hip→contact shell | body-height travel at 100 mm stance offset |
 |---|---|---|
-| 3 DOF (no ankle) | [290, 410] mm — 120 mm deep | 125 mm |
-| 4 DOF (ankle) | [210, 490] mm — **280 mm deep** | **295 mm** |
+| 3 DOF (tibia welded) | [453, 677] mm — 224 mm deep | 228 mm |
+| 4 DOF | [0, 677] mm — **677 mm deep** | **670 mm** |
 
-A US residential stair riser is 178 mm. **A 3-DOF version of this robot physically cannot
-lift its body one riser.** The ankle is a 2.33× multiplier on the leg's entire reach
-range, and that is its justification.
+The min reach collapses to zero because the longest link (330) is shorter than the other two
+together (347) — the leg can fold back on itself. A US residential stair riser is 178 mm, and
+a 3-DOF leg clears that only near one stance offset, with no margin either side. The fourth
+joint is what turns a thin shell into a solid one, and that is its justification.
 
 ## The torque model
 
@@ -187,64 +191,111 @@ break never reaches thermal steady state. It also sizes the pack — a 20-minute
 the order of 25–37 Wh, so a pack sized for hour-long missions is dead weight, and weight
 is the most leveraged number in the torque budget.
 
-## Measured geometry (Fusion, 2026-09-22) — supersedes the estimates below
+## Measured geometry — leg v2 (Fusion, 2026-09-23)
 
-`cad/export/leg-geometry.json` is the extract: joint axes read from the servo horn hubs,
-per-component mass at infill-calibrated densities, and a named standing pose. It flags its
-own inferences, which is why it can be trusted where it doesn't.
+`cad/export/leg-geometry.json` is schema **`hexbot-leg-geometry/2`**, and it says outright that
+it replaces v1: *"old leg design, pre-redesign; discard it."* **Bench numbers taken before
+2026-09-23 do not transfer.**
 
-**Chain, as in-plane link lengths** (perpendicular distance between parallel axes):
+### Naming — three words for the same two joints
 
-| from → to | length | axial offset |
-|---|---|---|
-| coxa yaw → hip lift | 0.08 mm — **the axes intersect** | — |
-| hip lift → knee | 162.25 mm | −73.6 mm |
-| knee → ankle | **352.79 mm** | +10.66 mm |
-| ankle → foot contact | **235.19 mm** | +17.02 mm |
+The extract calls the pitch joints `knee` and `ankle`; Ben calls them the femur and tibia
+joints; the channel map calls them 2 and 3. All three mean the same pair, and v1's own
+parameter comments already used *femur servo* / *tibia servo*. This doc uses **femur joint
+(ch2)** and **tibia joint (ch3)**, because that is what the links they drive are called.
 
-Reach from the hip lift axis is **750 mm**. Hip circle radius **72.7 mm** (legs 3–5 sit
-0.5–1.0 mm further out). Modelled standing pose: **825 mm span, body 325 mm up**.
+### What changed
 
-> The stacked v0.2 hip did what it was predicted to: the coxa-yaw and hip-lift axes now
-> intersect within **0.08 mm**, so `coxaLateralOffsetMm = 0` is literally true and the coxa
-> closed form simplifies for real rather than by assumption.
-
-**Mass:** 6 × 643.8 g of leg + 253.2 g body core = **4.12 kg modelled**, excluding fasteners,
-wiring, electronics, battery and bearings — call it **4.7–5.0 kg** assembled. Servos are
-2 × 165 g (DS5180SG) + 2 × 60 g (DS3225MG) per leg, so **2.7 kg of the machine is servo**.
-
-### ⚠ The knee is the binding joint, and it is over budget
-
-Moment arms are **X-offsets, not horizontal distances** — the pitch axes lie along Z, so for
-a vertical load `tau = -r_x · F` and the Z component contributes nothing.
-
-| joint | lever | need @ ideal ⅓ | available | |
-|---|---|---|---|---|
-| hip lift | 340 mm | 56.7 kg·cm | 90.6 @ 6.6 V | 63%, SF 1.60 |
-| **knee** | **185 mm** | **30.8 kg·cm** | **25.0** | **123%, SF 0.81** |
-| ankle | 88 mm | 14.7 kg·cm | 25.0 | 59%, SF 1.69 |
-
-At worst-case load share (0.5, not 1/n — load splits by where the CoM falls in the support
-triangle) the knee reaches **185%**.
-
-> ⚠ **Two errors in opposite directions moved the binding constraint, and both were in the
-> brief.** The hip servos were specced at 65 kg·cm @ 7.4 V; the DS5180SG datasheet says
-> **98** (85 @ 6 V, 105 @ 8.4 V), so the hip is ~50% stronger than budgeted and comfortable.
-> The knee and ankle were specced at 45 kg·cm; the model has **DS3225MG, 25 kg class**, ~45%
-> weaker, on the joint with the second-longest lever. Earlier analysis concluded hip lift
-> binds. It does not — **the knee does.**
->
-> ⚠ **Unresolved: is a 25 kg or a 45 kg servo actually fitted at knee and ankle?** At 45 kg·cm
-> the knee is 68% at ideal share and marginal at worst; at 25 kg it cannot hold the pose.
-> This one fact decides whether the modelled stance is achievable.
-
-In-budget levers at M = 5.0 kg, worst-case share:
-
-| joint | SF 1.5 | SF 2.0 | actual |
+| | v1 | v2 | |
 |---|---|---|---|
-| hip lift | 242 mm | 181 mm | 340 |
-| knee | 67 mm | 50 mm | 185 |
-| ankle | 67 mm | 50 mm | 88 |
+| coxa yaw → hip lift | 0.08 mm | 1.41 mm | axes still effectively intersect |
+| hip lift → femur joint | 162.25 mm | **111.95 mm** | −50 mm: the servo moved in toward the hip |
+| femur joint → tibia joint | 352.79 mm | **330.32 mm** | −22 mm |
+| tibia joint → toe | 235.19 mm | 234.81 mm | unchanged |
+| reach from the hip-lift axis | 750 mm | **677 mm** | −73 mm |
+| leg mass | 643.8 g | **730.0 g** | +86 g |
+| servos per leg | 2 × 165 g + 2 × 60 g | **3 × 165 g + 1 × 60 g** | the femur joint is now a DS5180SG |
+
+**Mass:** 6 × 730 g + 253.2 g body core = **4.63 kg modelled**, excluding fasteners, wiring,
+electronics, battery and bearings — call it **5.3–6.0 kg** assembled. **3.33 kg of that is
+servo**: 59% of the machine, and 76% of a single leg. The structure is not the mass problem
+and never was.
+
+> The coxa-yaw and hip-lift axes still meet (1.41 mm common normal), so `coxaLateralOffsetMm = 0`
+> stays literally true and the coxa closed form still simplifies for real.
+
+### ⚠ The binding joint moved to the tibia
+
+Putting an 80 kg servo on the femur joint did exactly what it was meant to. It also handed the
+constraint to the one joint still on a DS3225MG — and that joint drives the longest link that
+reaches the ground, 234.81 mm of it.
+
+In-budget levers, DS5180SG derated to **90.6 kg·cm at 6.6 V**, DS3225MG at **25 kg·cm**:
+
+| M | share | SF | coxa / hip / femur | **tibia** |
+|---|---|---|---|---|
+| 5.3 kg | ideal ⅓ | 2.0 | 256 mm | **71 mm** |
+| 5.6 kg | ideal ⅓ | 2.0 | 243 mm | **67 mm** |
+| 5.6 kg | worst 0.5 | 1.5 | 216 mm | **60 mm** |
+| 5.6 kg | worst 0.5 | 2.0 | 162 mm | **45 mm** |
+| 5.9 kg | worst 0.5 | 2.0 | 154 mm | **42 mm** |
+
+At the honest design point — worst-case share, SF 2.0 — **the tibia link has to stay within
+about 11° of vertical.** Tilt it 30° off vertical and its lever is 117 mm, which is 2.6× the
+budget. `tau_tibia = F · L4 · cos(phi)` is maximal at flat-foot, so **this leg cannot stand
+flat-footed**: the foot has to hang.
+
+That is a design statement about the toe, not a software limit. Either the tibia joint gets one
+of the spare 80 kg servos (the lever cap goes to 162 mm and the constraint disappears), or the
+toe geometry has to guarantee the contact point sits under the tibia joint.
+
+### Reach-rich, stance-poor
+
+The three 80 kg joints all cap at the **same** 162 mm of horizontal offset, because each one's
+lever is the horizontal distance from its own axis to the toe and the hip's is the largest. So:
+
+- **Height is nearly free.** With the tibia vertical, the leg reaches **645–673 mm** below the
+  hip axis anywhere in the usable offset range — the height barely varies with stance width.
+- **Width is the scarce resource.** 162 mm of offset plus a 72.7 mm hip circle is a foot radius
+  of 235 mm, **span ≈ 469 mm**.
+
+Which makes the stability trade one-sided — spend nothing on height you do not need:
+
+| body / COM height | tripod tipping | 5 legs down |
+|---|---|---|
+| 200 mm | **30.7°** | 43.9° |
+| 250 mm | 25.4° | 37.6° |
+| 300 mm | 21.6° | 32.6° |
+| 400 mm | 16.5° | 25.7° |
+| 565 mm | 11.9° | 18.8° |
+
+Standing low is worth more than a stronger servo here. At 200 mm the tripod tipping angle is
+30.7°, within sight of the 32.5° stair figure that the old geometry missed by a factor of two.
+
+### ⚠ Two things v1 had and v2 does not
+
+1. **No standing pose.** v1 shipped a parameter-driven standing pose (`leg_hip_lift 20°`,
+   `leg_femur 60°`, `leg_tibia −75°`) with the toes on a ground plane; v2's saved pose is folded,
+   toe ~45 mm below the mount seat. So *"825 mm span, body 325 mm up"* is gone and the stance
+   numbers above are derived here, not read from the model.
+2. **No user parameters.** The `HexBot/Params` file is not derived into this assembly, so joint
+   zero and direction relative to servo pulse width are **undefined in the model**. The
+   pulse ↔ angle mapping now has to come entirely from the bench.
+
+Neither is wrong — it is a single-leg assembly mid-redesign — but both were load-bearing and
+both should come back before the gait engine needs them. There is also **no six-leg assembly**,
+so hip circle radius and mounting azimuth are unavailable; **72.7 mm is stale** and every span
+figure above inherits that.
+
+### Still missing from the model
+
+- DS3225MG datasheet — its torque figure is inferred and it is the binding number again
+- Joint rotation limits — none modelled on any of the four joints
+- The **pulse-width ↔ model-angle mapping**, now with no parameters to anchor it
+- 690–1315 g of unmodelled mass, which scales every torque figure linearly
+- The extract flags one small thing itself: `Dowle Rod Small` is set to ABS where the old
+  project had it as steel. Worth 2.3 g if it is wrong — negligible, but it is the kind of
+  material default that is wrong in a load path somewhere else too.
 
 ### ⚠⚠ 180° or 270°? The same pulse range means both
 
@@ -255,14 +306,6 @@ here assumes 270°, i.e. 7.41 µs/degree. If 180° variants are fitted it is 11.
 
 Settle it on the bench: command a known pulse step, measure the actual sweep with a
 protractor. Two minutes, and it invalidates or confirms a lot.
-
-### Still missing from the model
-
-- DS3225MG datasheet — its torque figure is inferred and is now the binding number
-- Joint rotation limits — none modelled on any of the four joints
-- The **pulse-width ↔ model-angle mapping**; the model's degrees and the bench's microseconds
-  are currently different languages
-- ~600–900 g of unmodelled mass, which scales every torque figure linearly
 
 ## ⚠ Verify the channel map on every leg before driving it
 
@@ -294,10 +337,10 @@ Fixed convention, the same for all six legs — **leg *N* occupies channels `4N`
 
 | offset | joint | axis | servo |
 |---|---|---|---|
-| +0 | hip X — coxa yaw | vertical | 80 kg·cm |
-| +1 | hip Y — hip lift | horizontal | 80 kg·cm |
-| +2 | knee | horizontal | 45 kg·cm |
-| +3 | ankle | horizontal | 45 kg·cm |
+| +0 | hip X — coxa yaw | vertical | DS5180SG, 98 kg·cm |
+| +1 | hip Y — hip lift | horizontal | DS5180SG, 98 kg·cm |
+| +2 | femur joint (`knee` in the CAD extract) | horizontal | DS5180SG, 98 kg·cm — **was 25 kg until leg v2** |
+| +3 | tibia joint (`ankle` in the extract) | horizontal | DS3225MG, 25 kg·cm — the binding joint |
 
 24 servos across two PCA9685 boards, so the split falls out of the arithmetic:
 
