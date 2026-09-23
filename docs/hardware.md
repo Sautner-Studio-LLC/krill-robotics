@@ -531,6 +531,55 @@ In v0.1 the lift servo sat **on top of** the yaw servo, jutting out half its wid
    change that fixes the break may also recover some of the stride the stair case is short of.
    Worth measuring once v0.2 is on the bench.
 
+## Bench findings — leg v2 shakedown (2026-09-23)
+
+A short unplanned load test. The leg was hand-posed on the bench, hip clamped, toe on the
+scale; three channels were energised at 1500 µs to establish a reference pose. **1500 µs is
+mid-*pulse*, not mid-*pose***, so the joints snapped from where they had been set to wherever
+1500 put them, which drove the leg down onto the scale and then, once de-energised, let it
+collapse flat with the tibia servo resting on the scale centre.
+
+**Nothing broke.** That is the first structural result for the v2 prints, and it is a much
+harder hit than the controlled v0.2 run that snapped a hip mount at ~0.30 kg. Ben: *"everything
+held up and it was a good test — we want to push it harder each run. If six legs did that with
+a free body it would have stood up."* Which is the right read: an unloaded bench leg driving
+itself into a fixed surface is close to the load a leg sees when the body is the thing that
+moves instead.
+
+Three things worth keeping:
+
+1. **⚠⚠ A de-energised leg does NOT hold its pose.** The assumption that big metal-gear servos
+   would hold position by gear friction with power off is **wrong on this hardware** — the leg
+   went flat. This is the first hardware evidence bearing on `PARK.stableWithTorqueOff`, which
+   is the central invariant of the machine: park is the rest state, the charge state and the
+   failure state at once, and on a light pack it is also the docking state. **Park must be
+   mechanically stable — resting on structure, skids or a detent — and can borrow nothing from
+   the servos.** Design the chassis underside accordingly; do not plan to "leave it where it
+   stops".
+2. **It collapsed onto the tibia servo, which is exactly where the knee pad goes.** The pad
+   location and the DS3225MG's bracket are the same place on the part, and tonight the leg's
+   weight went through that bracket. At 730 g it is fine; at a sixth of 5.6 kg it is the load
+   path the pad exists to avoid. See the knee-contact section: the pad is a structural member
+   of the femur that happens to sit beside a servo.
+3. **Hip-lift direction is probably inverted on leg v2.** Ben's read of the motion: *"it looked
+   like the leg was floundering on the ground and thought you meant to be lifting instead of
+   going down."* Leg v1's datum was *higher µs = UP*. Treat v2 as **unknown until re-measured**;
+   the direction probe run that evening was inconclusive because the pose it started from was
+   itself a guess.
+
+> **⚠ Procedure, and this is the lesson that cost the evening: never make the first energise of
+> an unknown pose while the toe is loaded.** A PWM servo has no feedback and no soft start, so
+> the first pulse is a snap to the commanded position from wherever the joint happens to be.
+> Unload the contact first — slide the scale out, let the leg hang — energise one channel at a
+> time, converge on a pose the operator confirms by eye, *then* put the load back. The bench
+> rule was already written down ("hand-set joints near mid-travel before energising") and was
+> not followed.
+
+**Still owed: leg v2's home pose in microseconds.** The new Fusion assembly has no user
+parameters, so nothing in the model defines joint zero or direction against pulse width. Find
+it the way the calibration section prescribes — hold ONE value, ask higher or lower, converge —
+with the leg unloaded, and record it in the calibration table.
+
 ## Three actuation constraints
 
 1. **24 joints, so two PCA9685 boards** at 0x40 and 0x41 (bridge A0 on the second) for 32
