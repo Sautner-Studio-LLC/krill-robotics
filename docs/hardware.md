@@ -137,22 +137,43 @@ contact and are protected on rubble, `tau_ankle` becomes structurally zero so th
 can be de-energised, and it is the degraded mode if an ankle servo fails — the leg still
 walks.
 
-### Knee contact is the high-load mode
+### Knee contact is *the* load-bearing mode, and it is feasible by construction
 
-Not because folding shortens a lever — hip torque is mode-independent at a given stance
-offset. It is because **only the tibia is long enough to place a contact point directly
-beneath the hip axis at low body height**, and that pose is a vertical compression strut:
+The pad sits at the **tibia joint** — the bend at the bottom of the femur, which the CAD
+extract confusingly calls `ankle`. Fold the tibia back and that joint becomes the lowest point.
 
-| femur angle | body height | contact offset | hip torque |
+Three things then fall out, all of them good:
+
+1. **The tibia joint's lever goes to ~0**, because the contact is on its own axis. Its torque
+   is the pad's offset from the axis, not a link length. The 25 kg servo is out of the load
+   path entirely.
+2. **Only two links stand between the hip and the ground** (112 + 330 mm), so the hip lever
+   cannot exceed 442 mm geometrically and is capped at 162 mm by the budget — the same cap as
+   plantigrade. **No stance width is lost.**
+3. **The femur joint's lever shrinks as the pose gets taller**, because a taller pose means a
+   more vertical femur:
+
+| body height at 160 mm offset | hip lever | femur lever | tripod tipping |
 |---|---|---|---|
-| **−90°** | **60 mm** | **0 mm** | **0.000 N·m** |
-| −70° | 56 mm | 20.5 mm | 0.704 N·m |
-| −60° | 52 mm | 30.0 mm | 1.030 N·m |
+| 200 mm | 160 mm (99% of cap) | 124 mm (76%) | **30.2°** |
+| 250 mm | 160 mm (99%) | 74 mm (46%) | 25.0° |
+| 300 mm | 160 mm (99%) | 51 mm (32%) | 21.2° |
+| 400 mm | 160 mm (99%) | 82 mm (51%) | 16.2° |
 
-Plantigrade can reach zero offset too, but only at ~350 mm body height, where the support
-polygon is small relative to the centre-of-mass height. With the unloaded tibiae splayed
-outward as outriggers, knee contact reaches a **78.9° tipping angle** against 16.4° for a
-plantigrade tripod at the same span.
+The hip is the joint that works in this mode and the femur joint has margin everywhere. With
+the unloaded tibiae splayed outward as outriggers the tipping angle goes far past any of these,
+since an outrigger costs almost nothing — 39.5 g of tibia at a 0.53 kg contact rating.
+
+> ⚠⚠ **THE KNEE PAD MUST TRANSFER LOAD INTO THE FEMUR, NOT INTO THE TIBIA SERVO'S MOUNT.**
+> The pad location and the DS3225MG's bracket are the same place on the part. Bolt the pad to
+> the bracket and the entire weight of the robot goes through the one printed mount holding the
+> smallest servo — the exact part class, and very nearly the exact part, that failed at
+> ~5–11 kg·cm on v0.2. The pad is a structural member of the femur that happens to sit beside a
+> servo, and it should be printed and loaded as one.
+
+> The tibia is also **free while standing**. Six folded-back tibiae with toes rated for half a
+> kilo are six light manipulators available without leaving the load-bearing pose — which is the
+> same observation that makes the stored-solar-panel stretch goal unexotic.
 
 ## ⚠ Rule: the robot never stands still
 
@@ -224,11 +245,15 @@ and never was.
 > The coxa-yaw and hip-lift axes still meet (1.41 mm common normal), so `coxaLateralOffsetMm = 0`
 > stays literally true and the coxa closed form still simplifies for real.
 
-### ⚠ The binding joint moved to the tibia
+### The tibia does not carry the robot — the knee pad does
 
-Putting an 80 kg servo on the femur joint did exactly what it was meant to. It also handed the
-constraint to the one joint still on a DS3225MG — and that joint drives the longest link that
-reaches the ground, 234.81 mm of it.
+**Design intent (Ben, 2026-09-23): the tibia and toe are for reach and posturing. Anything that
+would stress them — supporting full weight — is done by flipping the tibia back and standing on
+a pad at the knee.** That single sentence resolves what otherwise reads as an under-sized servo,
+and it is why the numbers below are a *specification* rather than a problem.
+
+Putting an 80 kg servo on the femur joint handed the nominal torque constraint to the one joint
+still on a DS3225MG, which drives the longest link that reaches the ground, 234.81 mm of it.
 
 In-budget levers, DS5180SG derated to **90.6 kg·cm at 6.6 V**, DS3225MG at **25 kg·cm**:
 
@@ -240,26 +265,45 @@ In-budget levers, DS5180SG derated to **90.6 kg·cm at 6.6 V**, DS3225MG at **25
 | 5.6 kg | worst 0.5 | 2.0 | 162 mm | **45 mm** |
 | 5.9 kg | worst 0.5 | 2.0 | 154 mm | **42 mm** |
 
-At the honest design point — worst-case share, SF 2.0 — **the tibia link has to stay within
-about 11° of vertical.** Tilt it 30° off vertical and its lever is 117 mm, which is 2.6× the
-budget. `tau_tibia = F · L4 · cos(phi)` is maximal at flat-foot, so **this leg cannot stand
-flat-footed**: the foot has to hang.
+Read as a weight-bearing joint that would say the tibia has to stay within ~11° of vertical.
+Read correctly — as a **light contact** — it says how much the toe may take:
 
-That is a design statement about the toe, not a software limit. Either the tibia joint gets one
-of the spare 80 kg servos (the lever cap goes to 162 mm and the constraint disappears), or the
-toe geometry has to guarantee the contact point sits under the tibia joint.
+| tibia attitude | lever | max toe force | with SF 2.0 |
+|---|---|---|---|
+| horizontal (flat-foot) | 234.8 mm | 10.4 N | **0.53 kg** |
+| 60° from vertical | 117.4 mm | 20.9 N | **1.06 kg** |
+| 80° from vertical | 40.8 mm | 60.1 N | **3.06 kg** |
 
-### Reach-rich, stance-poor
+**The toe is a finger, not a foot.** Half a kilo at full extension, three kilos when nearly
+under its own joint. That is ample for what it is for: probing a surface before committing to
+it, feeling for ground during swing, bracing against a riser, splaying as an outrigger,
+placing an object. It is not ample for a sixth of the robot, and it is not meant to be.
 
-The three 80 kg joints all cap at the **same** 162 mm of horizontal offset, because each one's
-lever is the horizontal distance from its own axis to the toe and the hip's is the largest. So:
+**Keep the DS3225MG.** Its real job is swinging an unloaded tibia: the whole tibia assembly is
+**39.5 g** with its mass centre ~117 mm out, which is **0.46 kg·cm — 1.8% of a 25 kg servo**.
+Fitting one of the spare 80s there would add 105 g per leg, **630 g on the robot**, to a joint
+running at under two percent of the part already in it. Mass is the most leveraged number in
+the whole torque budget; this is the wrong place to spend it.
 
-- **Height is nearly free.** With the tibia vertical, the leg reaches **645–673 mm** below the
-  hip axis anywhere in the usable offset range — the height barely varies with stance width.
-- **Width is the scarce resource.** 162 mm of offset plus a 72.7 mm hip circle is a foot radius
-  of 235 mm, **span ≈ 469 mm**.
+### Two envelopes, one width
 
-Which makes the stability trade one-sided — spend nothing on height you do not need:
+All three 80 kg joints cap at the **same 162 mm** of horizontal offset, because each one's
+lever is the horizontal distance from its own axis to the contact and the hip's is always the
+largest. **That cap is the same in both contact modes**, so knee-stand gives up no stance width
+at all — 162 mm of offset plus a 72.7 mm hip circle is a foot radius of 235 mm, span ≈ 469 mm.
+
+What the modes differ in is **height**:
+
+| | body height range | what it is for |
+|---|---|---|
+| knee-stand (pad at the tibia joint) | **146 – 414 mm** | carrying the robot |
+| plantigrade (toe down) | up to **645 mm** | reaching, posturing, probing |
+
+So the leg has a weight-bearing envelope and a taller reach-only envelope stacked on top of it,
+which is exactly the split Ben designed for. Reach is what versatility is made of; the load
+path is separate and shorter.
+
+Stability is one-sided in both — spend nothing on height you do not need:
 
 | body / COM height | tripod tipping | 5 legs down |
 |---|---|---|
@@ -267,10 +311,28 @@ Which makes the stability trade one-sided — spend nothing on height you do not
 | 250 mm | 25.4° | 37.6° |
 | 300 mm | 21.6° | 32.6° |
 | 400 mm | 16.5° | 25.7° |
-| 565 mm | 11.9° | 18.8° |
 
-Standing low is worth more than a stronger servo here. At 200 mm the tripod tipping angle is
-30.7°, within sight of the 32.5° stair figure that the old geometry missed by a factor of two.
+Standing low is worth more than a stronger servo. And the knee-stand envelope tops out at
+414 mm anyway, so the load mode is *naturally* in the stable part of the range.
+
+### ⚠ Hip circle radius is free stability — set it before the six-leg assembly exists
+
+Foot radius is `hip_circle_radius + stance_offset`. The torque budget constrains only the
+second term; the first is carried by the coxa yaw axis, which is **vertical and therefore
+carries no gravity torque at all**. So body radius buys stance width one-for-one at zero cost
+to any servo:
+
+| hip circle | foot radius | span | tripod tipping @ 250 mm |
+|---|---|---|---|
+| 72.7 mm (stale v1 value) | 233 mm | 465 mm | 25.0° |
+| 100 mm | 260 mm | 520 mm | 27.5° |
+| **120 mm** | **280 mm** | **560 mm** | **29.2°** |
+| 150 mm | 310 mm | 620 mm | 31.8° |
+
+At a 120 mm hip circle the low knee-stand pose (200 mm body height) reaches **35.0°** of tipping
+angle — past the 32.5° a continuous stair ramp would demand, which the old geometry missed by a
+factor of two. It costs body plate, some wiring run and a little body mass. **There is no
+six-leg assembly yet, so this is the cheapest it will ever be to change.**
 
 ### ⚠ Two things v1 had and v2 does not
 
@@ -430,12 +492,17 @@ yaw range are the same knob.** Legs at 60° on a circle of radius R have a colli
 by R and the leg's width at the hip, so widening yaw travel means a bigger circle or a
 narrower hip — not a software limit change.
 
-This matters for the stair case specifically. Footholds are 331 mm apart and ±30° of yaw at
-R ≈ 120 mm yields only ~120 mm of tangential stride, so a single stride cannot reach the next
-tread. The remedies are more yaw or a larger circle, and the bench says those are one remedy.
+Footholds on a staircase are 331 mm apart and ±30° of yaw at R ≈ 120 mm yields only ~120 mm of
+tangential stride, so **one stride cannot reach the next tread.** That is not the failure it
+first looks like — the goal is that the robot *works out how to get up*, not that it takes
+stairs in stride, so multiple steps per tread with a body shift between them is the expected
+answer rather than a workaround. It does say the hip circle wants to be bigger, and that is now
+the third independent argument for the same knob: yaw clearance, stance width, and free
+stability all improve with it, and none of them costs a servo anything.
 
-**Hip lift gave a clean 180°** under full gravity load — the whole leg, both 45 kg servos and
-a 350 mm tibia on a long arm — with no rail sag at any checkpoint, on extended servo leads.
+**Hip lift gave a clean 180°** under full gravity load — the whole **leg v1**, both 25 kg
+servos and a 353 mm femur on a long arm — with no rail sag at any checkpoint, on extended
+servo leads. (Leg v2 is heavier and shorter; the number does not carry over untested.)
 
 **The hip joint then snapped**, at a weak point already identified before the test. That is a
 functional test doing its job on a first-draft part. v0.2 reinforces exactly that location.

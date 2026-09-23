@@ -50,16 +50,23 @@ distance overstates every lever.
 Each pose emphasises a different part of the structure. Measure the lever to **every** joint in
 each, not just the one being emphasised.
 
+⚠ **Run E first.** Knee-stand is the mode that actually carries the robot — the tibia and toe
+are for reach and posturing, and anything that would stress them is done by folding the tibia
+back and standing on the knee pad. A leg that passes A and fails E is a leg that cannot stand;
+a leg that passes E and fails A has a reach limit, which is a much smaller problem. The order
+below is written emphasis-first for reading; **run it E, A, C, B, F, G, D.**
+
 | # | pose | emphasises | why it matters |
 |---|---|---|---|
 | **A** | femur extended, toe far outboard | **hip lift in bending**, long lever | the standing case, and the one that broke v0.2 |
 | **B** | tucked — toe close under the hip | hip mount in **shear and compression** | high force, low moment: a different failure mode entirely |
 | **C** | femur folded, femur joint far from the toe | **femur-joint mount and the 330 mm bone** | the longest link carrying the largest bending moment, and a mount newly held to 98 kg·cm |
-| **D** | tibia steep, toe just below the tibia joint | **tibia-joint mount**, short lever | the only joint still at 25 kg·cm, and the one the torque budget now binds on |
-| **E** | knee-walk — contact at the femur-joint pad | **femur in compression**, hip near zero torque | the intended high-load mode; should be the *easiest* pose |
+| **D** | tibia steep, toe just below the tibia joint | **tibia-joint mount**, short lever | the toe is rated for ~0.5 kg extended / ~3 kg tucked, so this proves a *light* contact — but the mount is still held to the servo's 25 kg·cm, because a mis-commanded pose can drive the toe into the ground at full servo torque |
+| **E** | knee-stand — contact at the knee pad, tibia folded back | **the knee pad and its load path into the femur** | ⭐ the mode the robot actually stands in; the pad must feed load into the femur, NOT into the tibia servo's bracket |
 | **F** | leg near-vertical, toe under the hip | links in **pure compression** | tests the bones rather than the joints |
 | **G** | lateral — toe pushed sideways | **coxa yaw**, which carries all propulsion and side load | nothing has ever tested this axis |
 
+Pose E needs the knee pad to exist; it is a new part and nothing has ever loaded it.
 Pose G needs the scale on its side or a block-and-scale sandwich. It is the one axis with zero
 gravity load and therefore zero coverage from every other test — and it takes the entire
 horizontal reaction during a step.
