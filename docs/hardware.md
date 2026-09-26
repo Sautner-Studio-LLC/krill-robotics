@@ -580,6 +580,239 @@ parameters, so nothing in the model defines joint zero or direction against puls
 it the way the calibration section prescribes — hold ONE value, ask higher or lower, converge —
 with the leg unloaded, and record it in the calibration table.
 
+## ⚠⚠ Bench findings — first powered runs (2026-09-25/26)
+
+The session that turned the camera into an instrument. Four joints, one of which died, and
+one finding that invalidates a tier of the safety architecture.
+
+### ⚠⚠ THE SERVOS HOLD POSITION AFTER THE SIGNAL STOPS — "no pulse" is NOT "no torque"
+
+The single most consequential result on this page. Measured on the bench supply with every
+channel read back as `FULL_OFF`, i.e. the PCA9685 generating no pulses at all:
+
+| state | rail current |
+|---|---|
+| cold, nothing ever commanded | **0.023 A** |
+| after ch0/ch1/ch2 held once, then released | **0.239 A** |
+
+216 mA across three servos that are being sent nothing — ~72 mA each, an order of magnitude
+above any plausible quiescent draw. Confirmed by hand, which is the better instrument here:
+**Ben cannot force those joints at all while the rail is live**, signal or no signal.
+
+⚠ **Unpowered is NOT limp either, and this corrects the 2026-09-23 note.** With the rail off
+the gearbox friction holds the leg's pose — Ben can move it by hand, hearing the gears turn,
+but it does not collapse. So there are *three* states, not two:
+
+| state | behaviour |
+|---|---|
+| rail off | friction holds the pose; back-drivable by hand with effort |
+| rail on, no signal | actively holding; cannot be forced |
+| rail on, commanded | actively holding; cannot be forced |
+
+**The friction hold is load-dependent and must never be relied on.** On 2026-09-23 the same
+leg went flat when de-energised — with the tibia *extended*, roughly double the moment about
+the hip. Folded back it holds; extended it did not. Friction that holds 730 g of leg says
+nothing about 5.6 kg of robot, so `PARK.stableWithTorqueOff` still has to be satisfied by
+structure.
+
+**The plan's reflex tier assumes the opposite.** `OE` high, the 0x70 all-call stop and the
+`MODE2.OUTNE` choice all stop *pulses*, and the design treats that as removing torque. On
+this hardware it does not. Consequences that must flow into the design:
+
+- **`emergencyTorqueOff()` needs a POWER path, not a signal path** — a relay or high-side
+  MOSFET on the servo rail, driven by the same reflex tier that drives OE. OE alone leaves
+  24 servos energised and holding.
+- **`requestTorqueOff()` / `bellyDrop()` cannot end by simply ceasing to command.** The
+  robot will stand there holding, drawing current, until V+ goes away.
+- It cuts the other way too, and in our favour: **a signal loss does not drop the robot.**
+  A Pi crash mid-stance leaves it standing rather than collapsing, which is the failure mode
+  you would have designed for if you could.
+- The OE-idle-direction question (pull-up vs pull-down, still unmeasured) matters *less*
+  than assumed for disarming, and not at all for making the machine go limp.
+
+### ⚠ The MODE1 brown-out detector is blind to the servo rail
+
+`MODE1.SLEEP` is the documented silent-brown-out canary and it works — for the *logic*
+supply, which on this breakout comes from the Pi's 3.3 V. **V+ feeds only the servos.** MODE1
+will read a cheerful `0x21` straight through a total collapse of the servo rail. Nothing in
+the I²C path can see that rail; it needs its own sensor (the ADS1115 already suggested, or
+the bench supply's own display while we are on a bench).
+
+### Two bugs in our own tooling, both of which faked a hardware fault
+
+1. **`set_counts()` masked the OFF high byte with `0x0F`.** `FULL_OFF` is **bit 4 (0x10)**,
+   so the mask deleted exactly the bit that stops the output and `channel_off()` was a
+   silent no-op all session. Mask is `0x1F`. Found because the bench supply read a
+   **cumulative** current across sequential single-channel holds — each servo stayed live
+   after "its" command ended.
+2. **`Leg.off()` called `all_off()` FIRST and then sixteen per-channel writes**, which
+   overwrote the stop it had just issued. It undid itself. `all_off()` goes last.
+
+Both meant the dwell-bounded safety property the calibration tool advertises was not real
+until it was fixed. **A safety guarantee that has never been tested is a comment.**
+
+### The camera is a real instrument now — and here is what it cannot do
+
+A BRIO on kraken, aimed square at the leg, closed the loop: joint motion is read off frames
+rather than narrated by the operator. What it bought, immediately: a sweep that produced
+**no movement at all** was detected as such, and "nothing happened" is precisely the result
+that is invisible when a human is watching, because it looks identical to "I wasn't looking
+at the right moment."
+
+- **Frame differencing beats eyeballing.** PSNR against a reference frame: ~20 dB when the
+  tibia visibly swung, 33–36 dB when it did not move at all. A number, not an impression.
+- **Colour mask on SATURATION, not hue.** Under incandescent shop light the brick, bench and
+  skin all read orange. The filament measured **S=176** against 53 (brick) / 67 (bench) /
+  104 (dark ceiling), and R/G of 3.1 against 1.1–1.3. Saturation separates; hue does not.
+- **A speed square in frame is the obliquity check, and it is worth more than scale.** Its
+  90° corner photographed as **90.37°**, so the camera was square to the leg's swing plane
+  to within half a degree and every measured angle is real. Without it an oblique view
+  under-reads every angle and would report a 270° servo as a 180° one with total confidence.
+  Scale comes free from the known link lengths; the right angle is the thing you cannot get
+  any other way.
+- ⚠ **A single still frame CANNOT see a motion transient.** An unloaded servo's holding
+  current is near zero and its motion surge lasts ~0.2 s, so a frame taken a second into a
+  7 s hold reads idle. This produced a confident, wrong conclusion that a working channel
+  was dead. Capture **video** and read the peak, or test under load.
+- ⚠ **The bench supply's display averages and updates a few times a second.** Its readings
+  are valid for steady-state holds and meaningless for transients.
+- ⚠ **A BRIO exposes four `/dev/video*` nodes and only the first is the camera** (the third
+  is a 340×340 greyscale IR sensor), and **the first frame is underexposed** — 67 KB versus
+  368 KB for the same scene twelve frames later. Both failures return a plausible image.
+  `tools/bench-cam.sh` refuses any node that does not advertise mjpeg and discards warmup
+  frames.
+
+> ⚠ **A fit statistic cannot tell you it measured the wrong thing.** A least-squares circle
+> through five tracked "toe" positions returned a 0.24 px residual — a beautiful number —
+> and every one of those points was the bottom edge of the crop box, not the toe. Five
+> nearly-collinear points fit almost any large circle. Same family as the photo-path check
+> that reported "212/212 covered" by verifying each chunk against itself.
+
+### Calibration does not survive reassembly
+
+A horn re-index or a swapped connector silently invalidates the whole µs↔angle map. The
+"rising µs retracts the tibia" result was measured, then the leg was rebuilt, and it could
+no longer be assumed. **Any mechanical change to a joint means re-running its sweep before
+anything is commanded against a load.**
+
+### Structural results — the plumb strut is not what will break
+
+| test | result |
+|---|---|
+| press down on the plumb femur, contact centred | **10 kg**, no fold |
+| pull down on the hip arm until it felt close to failure | **5 kg** |
+
+For scale: the machine is 5.3–6.0 kg, a tripod puts ~2 kg on a leg, and the v0.2 hip mount
+snapped at **0.30 kg**. That is 5× the walking load on one leg and ~16× the old failure
+point in the opposite direction.
+
+### Geometry confirmed by tape, and the CAD was right
+
+| | value |
+|---|---|
+| hip-lift shaft → femur shaft | **110 mm** (CAD says 111.95 — vindicated) |
+| femur shaft → ground contact | **340 mm** |
+| fully outstretched, hip-lift shaft → contact | **450 mm** |
+
+An earlier "19 cm lifting arm" was the arm *including the servo body*, not shaft-to-shaft.
+Nothing downstream of `leg-geometry.json` needed revisiting.
+
+**The plumb stance is entirely inside budget at every height.** Hip lever is `L2·cos(arm
+angle)`, so it peaks at the arm's own length:
+
+| lift arm | hip lever | body height | load at SF 2.0 | at stall |
+|---|---|---|---|---|
+| straight up | 0 mm | 230 mm | — | — |
+| 60° up | 55 mm | 245 mm | 8.2 kg | 16.5 kg |
+| horizontal | **110 mm** | 340 mm | 4.1 kg | 8.2 kg |
+| 60° down | 55 mm | 435 mm | 8.2 kg | 16.5 kg |
+| straight down | 0 mm | 450 mm | — | — |
+
+Worst-case hip lever anywhere in that envelope is **110 mm against a 162 mm cap**, and the
+220 mm of vertical travel clears a 178 mm stair riser *in the load-bearing stance*. **Do not
+lengthen the lift arm**: 190 mm would buy 380 mm of travel at a 190 mm worst-case lever,
+over the cap, exactly at the mid-height where the robot wants to stand. Shortening is the
+direction that risks the plumb femur fouling the hip.
+
+The **triangle pose** (femur lever 335 mm measured) is a reach-and-place pose, not a
+weight-bearing one: 1.35 kg at SF 2.0 at the femur joint, and the hip is worse. Do not load
+it.
+
+### Bench power
+
+**7.4 V rail, 5.0 A limit.** 7.4 V is the 2S pack's nominal, so bench numbers transfer to
+the machine at mid-charge; derate ~7% toward the 6.6 V cutoff (90.6 vs 97.4 kg·cm for the
+DS5180SG). Set the current limit by shorting the leads, setting CC, then removing the short.
+
+- ⚠ **A too-low current limit is a confusing fault, not a safe one.** With the supply in CC
+  the rail simply cannot deliver, every reading pins at the limit, and because MODE1 is
+  blind to V+ nothing reports it. Watch the CV/CC indicator.
+- ⚠ **The LM2596 buck is a ~3 A part** and a DS3225MG stalls at ~2.5–3 A, so it is marginal
+  exactly when the tibia works hard — and a buck folding back under a surge is
+  indistinguishable from a dead servo. It also costs ~30 mA of quiescent draw (idle went
+  0.023 → 0.053 A when fitted). Its real job is 0.46 kg·cm, so it will never legitimately
+  need that current; treat "tibia went dead" as "check the buck first", or fit a 5 A module.
+
+### The tibia fault was the buck and the splices — the servo was fine all along
+
+Symptom: zero current and no motion on ch3, through a new PCA9685, bonded grounds, a
+verified 6.0 V buck output and a correct pulse confirmed by register read-back. The
+diagnosis cost an evening and produced two wrong conclusions before the right one.
+
+- A **brand new 25 kg servo plugged straight into ch3 worked on the first try**, so the
+  channel was never at fault — and the original servo, once the wiring was cleaned up,
+  **works too**. Nothing was broken. It was the buck and the splices between them.
+- ⚠ **"Draws no current" did not mean "not driven".** An unloaded servo's holding current is
+  ~0 and its motion surge is ~0.2 s, so the bench supply — which averages and updates a few
+  times a second — showed idle for a channel that was working perfectly. The operator's eyes
+  caught in one second what the instrument could not see at all.
+- ⚠ A supply whose **current limit is set too low** produces the same symptom by a different
+  mechanism: every reading pins at the limit and nothing reports it. Both were live
+  hypotheses at once, and both were wrong.
+
+The lesson that generalises: **a measurement that reads "nothing" is the weakest possible
+evidence**, because every failure of the instrument also reads "nothing". Confirm a negative
+against a second, independent channel before acting on it.
+
+⚠ **The tibia attachment has now failed three times in one day** — it collapsed under the
+leg's weight, it was re-indexed on the horn, then it came off the horn during an unloaded
+sweep. It is the weakest interface on the leg. That is tolerable only because the design
+deliberately keeps the tibia out of the load path; it is *not* tolerable for the
+tibia-as-finger work, which loads that exact joint.
+
+### ⚠⚠ THE HIP ARM FRACTURED during an uncalibrated travel sweep (2026-09-26)
+
+Driving ch1 (hip lift) from 1600 to 1700 us broke the printed lift arm. The leg was airborne,
+so self-weight was only ~10 kg·cm — nowhere near a failure load. The servo drove the arm into
+its own mechanical limit and kept pushing: **up to 98 kg·cm into a printed part, held for the
+full 7 s dwell.**
+
+**The procedural failure is precise and it is worth more than the part.** The bench supply's
+current is the one signal that separates *moving* from *pushing against a stop*. It had been
+in frame all evening and was the instrument that caught two earlier faults — and then the
+angle measurements moved to the profile camera, which cannot see the supply, and the meter
+silently dropped out of the loop. So a travel sweep ran on a joint whose travel limits were
+unknown (the entire purpose of the sweep) with **no abort criterion**. The same hazard had
+already been written down one joint earlier — *"the tibia is folded against the femur, so the
+femur is a hard stop for that joint"* — and was not carried across to the hip.
+
+**Rules this buys:**
+- **A travel sweep must monitor current, not just position.** Rising current with no angle
+  change is a stall; abort on it. One camera cannot watch both the leg and the meter, so
+  either both cameras fire per step or the rail gets its own sensor (the ADS1115 already on
+  the list — see the MODE1 blind-spot note above).
+- **Shorten the dwell when probing UNKNOWN travel.** 7 s is right for settling a pose that is
+  known to be reachable; it is far too long for a value that might be past a stop. ~1 s is
+  enough to photograph.
+- **Approach an unknown limit in small steps from a known-good value**, not in 100 us jumps.
+- ⚠ **Swapping instruments is a change to the safety system.** Nothing announced that the
+  stall detector had been removed, because it was never a component — it was a habit.
+
+**Tooling from this session:** `tools/leg-calibrate.py` (dwell-bounded probe/sweep/hold),
+`tools/exercise-channel.py` (hands-free wiggle for wiring troubleshooting, with the three
+measurements to take while it runs), `tools/bench-cam.sh` (BRIO capture that refuses the IR
+node and discards warmup frames).
+
 ## Three actuation constraints
 
 1. **24 joints, so two PCA9685 boards** at 0x40 and 0x41 (bridge A0 on the second) for 32

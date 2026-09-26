@@ -84,9 +84,14 @@ class Pca9685:
         return pre, actual
 
     def set_counts(self, ch, on, off):
+        # The high byte is 0x1F, NOT 0x0F: bits 0-3 are the count's high nibble but
+        # bit 4 is FULL_ON / FULL_OFF. Masking with 0x0F deletes exactly the bit that
+        # stops the output, so channel_off() silently did nothing and every channel
+        # stayed live after its command. Found 2026-09-25 by the bench supply reading
+        # a CUMULATIVE current across sequential single-channel holds.
         base = LED0_ON_L + 4 * ch
         self.b.write_i2c_block_data(self.a, base,
-            [on & 0xFF, (on >> 8) & 0x0F, off & 0xFF, (off >> 8) & 0x0F])
+            [on & 0xFF, (on >> 8) & 0x1F, off & 0xFF, (off >> 8) & 0x1F])
 
     def set_us(self, ch, us, hz_actual):
         """Phase-stagger the ON edge per channel. With every channel starting its
